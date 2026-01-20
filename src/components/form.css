@@ -35,8 +35,7 @@ label {
   color: #333;
 }
 
-input,
-select {
+input {
   padding: 10px 12px;
   font-size: 14px;
   border-radius: 6px;
@@ -45,19 +44,72 @@ select {
   transition: all 0.2s ease;
   color: black;
 }
-input{
-    background-color: white;
+input {
+  background-color: white;
 }
 
-h6 {
-  margin: 0 0 6px 0;
-  font-size: 24px;
-  font-weight: 500;
+.custom-select {
+  position: relative;
+  width: 100%;
   color: black;
 }
 
-select {
-  background-color: #fff;
-  cursor: pointer;
+.custom-select-label {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #333;
 }
 
+.custom-select-trigger {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: black;
+}
+.custom-select-trigger:hover {
+  border-color: #646cff;
+}
+.custom-select-trigger span {
+  color: black;
+}
+.custom-select-options {
+  position: absolute;
+  top: 100%;
+  width: 100%;
+  max-height: 150px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  border-radius: 6px;
+  margin-top: 4px;
+  overflow-y: auto;
+  list-style: none;
+  padding-inline-start: 0;
+  z-index: 1;
+  overflow: auto;
+}
+.custom-select-option {
+  padding: 10px 15px;
+  cursor: pointer;
+  width: 100%;
+  border-bottom: 0.1px solid #ccc;
+}
+.custom-select-option:hover{
+  background-color: rgb(164, 223, 243);
+}
+.selected{
+  background-color: rgb(164, 223, 243);
+}
+.custom-select-option.disabled {
+  background-color: rgb(243, 242, 242);
+  color: gray;
+  cursor: not-allowed;
+}

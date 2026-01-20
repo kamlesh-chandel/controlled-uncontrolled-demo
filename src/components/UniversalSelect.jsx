@@ -1,33 +1,63 @@
-import {useState} from "react";
+import { useState } from "react";
 import "./form.css";
 
-function UniversalSelect({ options, value, onChange}) {
-  const [internalValue, setInternalValue] = useState(options[0]);
+function UniversalSelect({
+  options = [],
+  value,
+  onChange,
+  label,
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [internalValue, setInternalValue] = useState("");
+
   const selectedValue = value !== undefined ? value : internalValue;
 
-  const handleChange = (e) => {
-    if (value == undefined) {
-      setInternalValue(e.target.value);
+  const handleSelect = (option) => {
+    if (option.disabled) return;
+    if (value === undefined) {
+      setInternalValue(option.label);
     }
-    if (onChange) {
-      onChange(e.target.value);
-    }
+    onChange(option.label);
+    setIsOpen(false);
   };
 
+  const handleClear = (e) => {
+    e.stopPropagation();
+    if(value === undefined){
+      setInternalValue("");
+    }
+    onChange("");
+  }
   return (
-    <div>
-      <h6>UniversalSelect State - {selectedValue}</h6>
-      <label>Country</label>
-      <select value={selectedValue} onChange={handleChange}>
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
+    <div className="custom-select">
+      <label className="custom-select-label">{label}</label>
+      <button
+        type="button"
+        className="custom-select-trigger"
+        onClick={() => setIsOpen((prev) => !prev)}
+      >
+        <span>{selectedValue ? selectedValue : "Please Select Option" }</span>
+        {selectedValue ? <span onClick={handleClear}>⛌</span> : <span>{isOpen ? "↑" : "↓"}</span> }
+      </button>
+
+      {isOpen && (
+        <ul className="custom-select-options" role="listbox">
+          {options.map((option) => (
+            <li
+              key={option.label}
+              className={`custom-select-option
+                ${option.disabled && "disabled"}
+                ${selectedValue === option.label && "selected"}
+              `}
+              onClick={() => handleSelect(option)}
+            >
+              {option.label}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
 
 export default UniversalSelect;
-

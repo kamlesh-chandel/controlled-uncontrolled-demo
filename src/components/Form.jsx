@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import UniversalSelect from "./UniversalSelect";
 import "./form.css";
 
@@ -17,30 +17,55 @@ const countryList = {
   Japan: ["Tokyo", "Osaka", "Kyoto", "Hokkaido", "Okinawa"],
 };
 
-const Form = () => {
-  const [city, setCity] = useState("");
-  const [country, setCountry] = useState("India");
 
-  const handleCityChange = (e) => {
-    setCity(e.target.value);
+const Form = () => {
+  const [state, setState] = useState("");
+  const [country, setCountry] = useState("");
+
+  useEffect(() => {
     Object.entries(countryList).forEach(([key, cities]) => {
-      if (cities.includes(e.target.value)) {
+      if (cities.includes(state)) {
         setCountry(key);
       }
     });
+  }, [state]);
+
+  const getCountryOptions = (selectedState) => {
+    return Object.keys(countryList).map((country) => {
+      return {
+        label: country,
+        disabled:selectedState && !countryList[country].includes(selectedState),
+      };
+    });
   };
+
+const getStateOptions = (selectedCountry) => {
+  const result = [];
+  Object.keys(countryList).forEach((country) => {
+    const states = countryList[country];
+    for(let i =0;i<states.length;i++){
+      result.push({
+        label: states[i],
+        disabled: selectedCountry && country !== selectedCountry
+      })
+    }
+  })
+  return result;
+};
 
   return (
     <form>
-      <h6>Form State (Country): {country}</h6>
-      <div>
-        <label htmlFor="city">City</label>
-        <input value={city} id="city" onChange={handleCityChange} />
-      </div>
       <UniversalSelect
-        options={Object.keys(countryList)}
-        onChange={setCountry}
+        label="State"
+        options={getStateOptions(country)}
+        value={state}
+        onChange={setState}
+      />
+      <UniversalSelect
+        label="Country"
+        options={getCountryOptions(state)}
         value={country}
+        onChange={setCountry}
       />
     </form>
   );
