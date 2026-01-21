@@ -17,6 +17,13 @@ const countryList = {
   Japan: ["Tokyo", "Osaka", "Kyoto", "Hokkaido", "Okinawa"],
 };
 
+const selectStyle = {
+  selectWrapper: {height: "100px" },
+  optionsList: {backgroundColor: "black", color: "white" },
+  highlight: {backgroundColor:"orange"},
+  disabled: { backgroundColor: "rgb(230, 163, 163)" },
+  selected: { backgroundColor: "orange" },
+};
 
 const Form = () => {
   const [state, setState] = useState("");
@@ -34,24 +41,31 @@ const Form = () => {
     return Object.keys(countryList).map((country) => {
       return {
         label: country,
-        disabled:selectedState && !countryList[country].includes(selectedState),
+        disabled:
+          selectedState && !countryList[country].includes(selectedState),
       };
     });
   };
 
-const getStateOptions = (selectedCountry) => {
-  const result = [];
-  Object.keys(countryList).forEach((country) => {
-    const states = countryList[country];
-    for(let i =0;i<states.length;i++){
-      result.push({
-        label: states[i],
-        disabled: selectedCountry && country !== selectedCountry
-      })
-    }
-  })
-  return result;
-};
+  const getStateOptions = (selectedCountry) => {
+    const result = [];
+    Object.keys(countryList).forEach((country) => {
+      const states = countryList[country];
+      for (let i = 0; i < states.length; i++) {
+        result.push({
+          label: states[i],
+          disabled: selectedCountry && country !== selectedCountry,
+        });
+      }
+    });
+    return result;
+  };
+
+  const onClear = (e) => {
+    e.stopPropagation();
+    setState("");
+    setCountry("");
+  };
 
   return (
     <form>
@@ -60,12 +74,22 @@ const getStateOptions = (selectedCountry) => {
         options={getStateOptions(country)}
         value={state}
         onChange={setState}
+        closeOnOutsideClick
+        isClearOptionAllow
+        onClear={onClear}
+        isSearchOptionsAllow
+        //selectStyle={selectStyle}
       />
       <UniversalSelect
         label="Country"
         options={getCountryOptions(state)}
         value={country}
         onChange={setCountry}
+        closeOnOutsideClick
+        isClearOptionAllow
+        onClear={onClear}
+        isSearchOptionsAllow
+        //selectStyle = {selectStyle}
       />
     </form>
   );
