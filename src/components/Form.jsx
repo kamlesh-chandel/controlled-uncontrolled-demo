@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import UniversalSelect from "./UniversalSelect";
 import "./form.css";
 
@@ -18,43 +18,34 @@ const countryList = {
 };
 
 const selectStyle = {
-  selectWrapper: {height: "100px" },
-  optionsList: {backgroundColor: "black", color: "white" },
-  highlight: {backgroundColor:"orange"},
+  selectWrapper: { height: "100px" },
+  optionsList: { backgroundColor: "black", color: "white" },
+  highlight: { backgroundColor: "orange" },
   disabled: { backgroundColor: "rgb(230, 163, 163)" },
   selected: { backgroundColor: "orange" },
 };
 
 const Form = () => {
-  const [state, setState] = useState("");
-  const [country, setCountry] = useState("");
-
-  useEffect(() => {
-    Object.entries(countryList).forEach(([key, cities]) => {
-      if (cities.includes(state)) {
-        setCountry(key);
-      }
-    });
-  }, [state]);
-
-  const getCountryOptions = (selectedState) => {
-    return Object.keys(countryList).map((country) => {
-      return {
-        label: country,
-        disabled:
-          selectedState && !countryList[country].includes(selectedState),
-      };
-    });
+  const [value, setValue] = useState("");
+  //load options from api for async options support
+  const loadOptions = async (query) => {
+    const res = await fetch(`https://dummyjson.com/users/search?q=${query}&limit=10&skip=${0}`);
+    const data = await res.json();
+    return data.users.map((user) => ({
+      id: user.id,
+      label: `${user.firstName}`,
+      disabled: false,
+    }));
   };
 
-  const getStateOptions = (selectedCountry) => {
+  const getStateOptions = () => {
     const result = [];
     Object.keys(countryList).forEach((country) => {
       const states = countryList[country];
       for (let i = 0; i < states.length; i++) {
         result.push({
           label: states[i],
-          disabled: selectedCountry && country !== selectedCountry,
+          disabled: false,
         });
       }
     });
@@ -63,33 +54,22 @@ const Form = () => {
 
   const onClear = (e) => {
     e.stopPropagation();
-    setState("");
-    setCountry("");
+    setValue("");
   };
 
   return (
     <form>
       <UniversalSelect
-        label="State"
-        options={getStateOptions(country)}
-        value={state}
-        onChange={setState}
+        label="Users"
+        loadOptions={(query) => loadOptions(query)}
+        options={getStateOptions(value)}
+        value={value}
+        onChange={setValue}
         closeOnOutsideClick
         isClearOptionAllow
         onClear={onClear}
         isSearchOptionsAllow
         //selectStyle={selectStyle}
-      />
-      <UniversalSelect
-        label="Country"
-        options={getCountryOptions(state)}
-        value={country}
-        onChange={setCountry}
-        closeOnOutsideClick
-        isClearOptionAllow
-        onClear={onClear}
-        isSearchOptionsAllow
-        //selectStyle = {selectStyle}
       />
     </form>
   );
