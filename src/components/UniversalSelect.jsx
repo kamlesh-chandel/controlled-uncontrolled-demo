@@ -20,12 +20,11 @@ function UniversalSelect({
   const [isOpen, setIsOpen] = useState(false);
   const [internalValue, setInternalValue] = useState(null);
   const [focusedIndex, setFocusedIndex] = useState(-1);
-  const [skip, setSkip] = useState(0);
+  //const [skip, setSkip] = useState(0);
   const [asyncOptions, setAsyncOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-
   const highlightedRef = useRef(null);
   const fetchedRef = useRef(false);
 
@@ -61,6 +60,7 @@ function UniversalSelect({
   }, []);
 
   useEffect(() => {
+
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
     }, 400);
@@ -72,22 +72,17 @@ function UniversalSelect({
     if (!loadOptions) return;
     setLoading(true);
 
-    const result = await loadOptions(debouncedSearch, reset ? 0 : skip);
-
-    setAsyncOptions((prev) => (reset ? result : [...prev, ...result]));
+    const result = await loadOptions(debouncedSearch);
+    
     setLoading(false);
+    if(!result) return
+    setAsyncOptions((prev) => (reset ? result : [...prev, ...result]));
   };
 
   useEffect(() => {
     if (!loadOptions) return;
-    setSkip(0);
     fetchOptions(true);
   }, [debouncedSearch]);
-
-  useEffect(() => {
-    if (!loadOptions || skip === 0) return;
-    fetchOptions();
-  }, [skip]);
 
   useEffect(() => {
     if (!defaultSelectedOptionId || fetchedRef.current) return;
@@ -121,6 +116,8 @@ function UniversalSelect({
   }, [defaultSelectedOptionId, baseOptions, loadOptions]);
 
   const closeOptions = () => {
+    const storedValue = localStorage.getItem(SELECTED_OPTION);
+    if(storedValue) setSearch(JSON.parse(storedValue).label)
     setFocusedIndex(-1);
     setIsOpen(false);
   };
@@ -170,7 +167,7 @@ function UniversalSelect({
       e.target.scrollTop + e.target.clientHeight >=
       e.target.scrollHeight - 5
     ) {
-      setSkip((prev) => prev + 10);
+      fetchOptions("");
     }
   };
 

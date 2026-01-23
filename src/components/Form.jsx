@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import UniversalSelect from "./UniversalSelect";
 import "./form.css";
 
@@ -50,16 +50,26 @@ const selectStyle = {
 
 const Form = () => {
   const [value, setValue] = useState(null);
+  const [skip, setSkip] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
-  const loadOptions = async (query, skip) => {
+  const loadOptions = async (query) => {
+    if (!hasMore && !query) return [];
     const res = await fetch(
-      `https://dummyjson.com/users/search?q=${query}&limit=10&skip=${skip}`,
+      `https://dummyjson.com/users/search?q=${query}&limit=10&skip=${query ? 0 : skip}`,
     );
     const data = await res.json();
+    
+    const nextSkip = data.skip + data.limit;
+    if (nextSkip >= data.total) {
+      setHasMore(false);
+    } else {
+      setSkip(nextSkip);
+    }
 
     return data.users.map((user) => ({
       id: user.id,
-      label: `${user.firstName} ${user.lastName}`,
+      label: `${user.firstName}`,
       disabled: false,
     }));
   };
@@ -71,19 +81,17 @@ const Form = () => {
         {option.label}
       </span>
     );
-  }
+  };
 
   const loadDefaultOption = async (id) => {
-    const res = await fetch(
-      `https://dummyjson.com/users/${id}`,
-    );
+    const res = await fetch(`https://dummyjson.com/users/${id}`);
     const data = await res.json();
     return {
       id: data.id,
-      label: `${data.firstName} ${data.lastName}`,
+      label: `${data.firstName}`,
       disabled: false,
-    }
-  }
+    };
+  };
 
   const getStateOptions = () => {
     const result = [];
