@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import "./form.css";
 
+const SELECTED_OPTION = "selected_option";
+
 function UniversalSelect({
   options = [],
   loadOptions,
@@ -9,52 +11,121 @@ function UniversalSelect({
   label,
   closeOnOutsideClick = true,
   isClearOptionAllow = true,
-  onClear,
   isSearchOptionsAllow = true,
   selectStyle = {},
+  defaultSelectedOptionId,
+  loadDefaultOption,
+  editOption
 }) {
-
   const [isOpen, setIsOpen] = useState(false);
-  const [internalValue, setInternalValue] = useState("");
-  const [focusedIndex, setFocusedIndex] = useState(-1); //when navigate, this index will + or -
-
+  const [internalValue, setInternalValue] = useState(null);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [skip, setSkip] = useState(0);
   const [asyncOptions, setAsyncOptions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const highlightedRef = useRef(null);
+  const fetchedRef = useRef(false);
 
+  const selectedValue = value !== undefined ? value : internalValue;
   const baseOptions = loadOptions ? asyncOptions : options;
-  const selectedValue = value !== undefined ? value : internalValue; //for controlled and uncontrolled component
-  const [search, setSearch] = useState(selectedValue);
 
-  //filter default options
   const filteredOptions = useMemo(() => {
     if (loadOptions) return baseOptions;
-
     return baseOptions.filter((option) =>
       option.label.toLowerCase().includes(search.toLowerCase()),
     );
   }, [baseOptions, search, loadOptions]);
 
-  //filter async options by calling api
-  const loadFilteredData = async () => {
+  const updateSelectedValue = (option) => {
+    if (value === undefined) {
+      setInternalValue(option);
+    }
+    onChange(option);
+
+    if (option) {
+      localStorage.setItem(SELECTED_OPTION, JSON.stringify(option));
+    } else {
+      localStorage.removeItem(SELECTED_OPTION);
+    }
+  };
+
+  useEffect(() => {
+    const stored = localStorage.getItem(SELECTED_OPTION);
+    if (!stored) return;
+      const parsed = JSON.parse(stored);
+      updateSelectedValue(parsed);
+      setSearch(parsed.label || "");
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const fetchOptions = async (reset = false) => {
+    if (!loadOptions) return;
     setLoading(true);
-    const result = await loadOptions(search);
-    setAsyncOptions(result);
+
+    const result = await loadOptions(debouncedSearch, reset ? 0 : skip);
+
+    setAsyncOptions((prev) => (reset ? result : [...prev, ...result]));
     setLoading(false);
   };
+
   useEffect(() => {
     if (!loadOptions) return;
-    loadFilteredData();
-  }, [search, loadOptions]);
+    setSkip(0);
+    fetchOptions(true);
+  }, [debouncedSearch]);
 
-  //close options list
+  useEffect(() => {
+    if (!loadOptions || skip === 0) return;
+    fetchOptions();
+  }, [skip]);
+
+  useEffect(() => {
+    if (!defaultSelectedOptionId || fetchedRef.current) return;
+
+    const findOption = (list) => {
+      return list.find((opt) => opt.id === defaultSelectedOptionId);
+    };
+    const localMatch = findOption(baseOptions);
+
+    if (localMatch) {
+      fetchedRef.current = true;
+      updateSelectedValue(localMatch);
+      setSearch(localMatch.label);
+      return;
+    }
+
+    if (!loadOptions) return;
+
+    const fetchDefault = async () => {
+      const result = await loadDefaultOption(defaultSelectedOptionId);
+      if (result) {
+        fetchedRef.current = true;
+        setAsyncOptions((prev) => {
+          return [...prev, result];
+        });
+        updateSelectedValue(result);
+        setSearch(result.label);
+      }
+    };
+    fetchDefault();
+
+  }, [defaultSelectedOptionId, baseOptions, loadOptions]);
+
   const closeOptions = () => {
     setFocusedIndex(-1);
     setIsOpen(false);
   };
 
-  //close on click outside select
   useEffect(() => {
     if (!closeOnOutsideClick) return;
     document.addEventListener("click", closeOptions);
@@ -63,43 +134,17 @@ function UniversalSelect({
     };
   }, [closeOnOutsideClick]);
 
-  //navigation highlighter
   useLayoutEffect(() => {
-    highlightedRef?.current?.scrollIntoView({
-      top: 0,
-    });
+    highlightedRef?.current?.scrollIntoView({ top:0 });
   }, [focusedIndex]);
 
-  //sync search and selectedvalue
-  useEffect(() => {
-    if (isSearchOptionsAllow) {
-      setSearch(selectedValue || "");
-    }
-  }, [selectedValue, isSearchOptionsAllow, isOpen]);
-
-  //update selected option state
-  const updateSelectedValue = (val) => {
-    if (value === undefined) {
-      setInternalValue(val);
-    }
-    onChange(val);
-  };
-
-  //handle option click
   const handleSelect = (option) => {
     if (option.disabled) return;
-    updateSelectedValue(option.id);
+    updateSelectedValue(option);
     if (isSearchOptionsAllow) setSearch(option.label);
     closeOptions();
   };
 
-  //handle cross button click
-  const handleClear = (e) => {
-    e.stopPropagation();
-    updateSelectedValue("");
-  };
-
-  //handle navigation
   const handleKeyboardNavigation = (e) => {
     if (!filteredOptions.length) return;
 
@@ -119,19 +164,19 @@ function UniversalSelect({
     }
   };
 
-  //custom styling function
-  const applyStyle = (style) => style || {};
+  const handleInfiniteScroll = (e) => {
+    if (loading || debouncedSearch.length > 0) return;
 
-  const handleScroll = (e) => {
-    console.log(e.target.scrollHeight);
-    console.log(150 + e.target.scrollTop);
+    if (
+      e.target.scrollTop + e.target.clientHeight >=
+      e.target.scrollHeight - 5
+    ) {
+      setSkip((prev) => prev + 10);
+    }
   };
 
   return (
-    <div
-      className="custom-select"
-      style={applyStyle(selectStyle.selectWrapper)}
-    >
+    <div className="custom-select" style={selectStyle.selectWrapper || {}}>
       <label className="custom-select-label">{label}</label>
 
       <button
@@ -155,15 +200,19 @@ function UniversalSelect({
             value={search}
           />
         ) : (
-          <p>{selectedValue || "Please Select Option"}</p>
+          <p>{selectedValue?.label || "Please Select Option"}</p>
         )}
 
-        {selectedValue ? (
-          isClearOptionAllow ? (
-            <span onClick={onClear || handleClear}>⛌</span>
-          ) : (
-            <span>{isOpen ? "↑" : "↓"}</span>
-          )
+        {selectedValue && isClearOptionAllow ? (
+          <span
+            onClick={(e) => {
+              e.stopPropagation();
+              updateSelectedValue(null);
+              setSearch("");
+            }}
+          >
+            ⛌
+          </span>
         ) : (
           <span>{isOpen ? "↑" : "↓"}</span>
         )}
@@ -171,60 +220,38 @@ function UniversalSelect({
 
       {isOpen && (
         <>
-          {loading && ( //Loading view
-            <div className="no-custom-select-options">
-              <p className="no-custom-select-option">Searching...</p>
-            </div>
+          {filteredOptions.length > 0 && (
+            <ul
+              className="custom-select-options"
+              style={selectStyle.optionsList || {}}
+              onScroll={handleInfiniteScroll}
+            >
+              {filteredOptions.map((option, index) => (
+                <li
+                  key={option.id}
+                  ref={index === focusedIndex ? highlightedRef : null}
+                  className={`custom-select-option
+                    ${option.disabled && "disabled"}
+                    ${selectedValue?.id === option.id && "selected"}
+                    ${index === focusedIndex && "highlight"}
+                  `}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSelect(option);
+                  }}
+                >
+                  {editOption ? editOption(option): option.label}
+                </li>
+              ))}
+              {loading && <li className="search-view">Loading...</li>}
+            </ul>
           )}
 
-          {!loading &&
-            filteredOptions.length > 0 && ( //Option list view
-              <ul
-                className="custom-select-options"
-                //onScroll={handleScroll}
-                onScrollEnd={handleScroll}
-                style={applyStyle(selectStyle.optionsList)}
-              >
-                {filteredOptions.map((option, index) => (
-                  <li
-                    ref={index === focusedIndex ? highlightedRef : null}
-                    key={option.id}
-                    style={{
-                      ...(option.disabled && selectStyle?.disabled
-                        ? selectStyle.disabled
-                        : {}),
-                      ...(index === focusedIndex && selectStyle?.highlight
-                        ? selectStyle.highlight
-                        : {}),
-                      ...(selectedValue === option.label &&
-                      selectStyle?.selected
-                        ? selectStyle.selected
-                        : {}),
-                    }}
-                    className={`custom-select-option
-                    ${option.disabled && "disabled"}
-                    ${typeof selectedValue == "string" && selectedValue === option.label && "selected"}
-                    ${typeof selectedValue == "number" && selectedValue == option.id && "selected"}
-                    ${index === focusedIndex && "highlight"}
-
-                  `}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSelect(option);
-                    }}
-                  >
-                    {option.label}
-                  </li>
-                ))}
-              </ul>
-            )}
-
-          {!loading &&
-            filteredOptions.length === 0 && ( //No Option available view
-              <div className="no-custom-select-options">
-                <p className="no-custom-select-option">No Option Available</p>
-              </div>
-            )}
+          {!loading && filteredOptions.length === 0 && (
+            <div className="no-custom-select-options">
+              <p className="no-custom-select-option">No Option Available</p>
+            </div>
+          )}
         </>
       )}
     </div>
