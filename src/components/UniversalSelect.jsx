@@ -15,7 +15,7 @@ function UniversalSelect({
   selectStyle = {},
   defaultSelectedOptionId,
   loadDefaultOption,
-  editOption
+  editOption,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [internalValue, setInternalValue] = useState(null);
@@ -55,9 +55,9 @@ function UniversalSelect({
   useEffect(() => {
     const stored = localStorage.getItem(SELECTED_OPTION);
     if (!stored) return;
-      const parsed = JSON.parse(stored);
-      updateSelectedValue(parsed);
-      setSearch(parsed.label || "");
+    const parsed = JSON.parse(stored);
+    updateSelectedValue(parsed);
+    setSearch(parsed.label || "");
   }, []);
 
   useEffect(() => {
@@ -118,7 +118,6 @@ function UniversalSelect({
       }
     };
     fetchDefault();
-
   }, [defaultSelectedOptionId, baseOptions, loadOptions]);
 
   const closeOptions = () => {
@@ -135,7 +134,7 @@ function UniversalSelect({
   }, [closeOnOutsideClick]);
 
   useLayoutEffect(() => {
-    highlightedRef?.current?.scrollIntoView({ top:0 });
+    highlightedRef?.current?.scrollIntoView({ top: 0 });
   }, [focusedIndex]);
 
   const handleSelect = (option) => {
@@ -175,8 +174,15 @@ function UniversalSelect({
     }
   };
 
+  const applyStyle = (style) => {
+    return style ? style : {};
+  };
+
   return (
-    <div className="custom-select" style={selectStyle.selectWrapper || {}}>
+    <div
+      className="custom-select"
+      style={applyStyle(selectStyle.selectWrapper)}
+    >
       <label className="custom-select-label">{label}</label>
 
       <button
@@ -223,13 +229,24 @@ function UniversalSelect({
           {filteredOptions.length > 0 && (
             <ul
               className="custom-select-options"
-              style={selectStyle.optionsList || {}}
+              style={applyStyle(selectStyle.optionsList)}
               onScroll={handleInfiniteScroll}
             >
               {filteredOptions.map((option, index) => (
                 <li
                   key={option.id}
                   ref={index === focusedIndex ? highlightedRef : null}
+                  style={{
+                    ...(option.disabled && selectStyle?.disabled
+                      ? selectStyle.disabled
+                      : {}),
+                    ...(index === focusedIndex && selectStyle?.highlight
+                      ? selectStyle.highlight
+                      : {}),
+                    ...(selectedValue === option.label && selectStyle?.selected
+                      ? selectStyle.selected
+                      : {}),
+                  }}
                   className={`custom-select-option
                     ${option.disabled && "disabled"}
                     ${selectedValue?.id === option.id && "selected"}
@@ -240,7 +257,7 @@ function UniversalSelect({
                     handleSelect(option);
                   }}
                 >
-                  {editOption ? editOption(option): option.label}
+                  {editOption ? editOption(option) : option.label}
                 </li>
               ))}
               {loading && <li className="search-view">Loading...</li>}

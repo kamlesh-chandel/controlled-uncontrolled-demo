@@ -40,6 +40,14 @@ const emojiList = {
   20: "🏆",
 };
 
+const selectStyle = {
+  selectWrapper: { height: "100px" },
+  optionsList: { backgroundColor: "black", color: "white" },
+  highlight: { backgroundColor: "orange" },
+  disabled: { backgroundColor: "rgb(230, 163, 163)" },
+  selected: { backgroundColor: "orange" },
+};
+
 const Form = () => {
   const [value, setValue] = useState(null);
 
@@ -105,6 +113,7 @@ const Form = () => {
         closeOnOutsideClick
         isClearOptionAllow
         isSearchOptionsAllow
+        //selectStyle={selectStyle}
         //defaultSelectedOptionId={150}
         //loadDefaultOption={loadDefaultOption}
         editOption={editOption}
