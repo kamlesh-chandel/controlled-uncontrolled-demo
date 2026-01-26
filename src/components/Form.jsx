@@ -18,6 +18,7 @@ const countryList = {
 };
 
 const emojiList = {
+  0: "🥰",
   1: "😀",
   2: "🔥",
   3: "⚡",
@@ -49,49 +50,13 @@ const selectStyle = {
 };
 
 const Form = () => {
-  const [value, setValue] = useState(null);
+  const [value, setValue] = useState(() => {
+    const stored = localStorage.getItem("SELECTED_USER");
+    return stored ? JSON.parse(stored) : null;
+  });
   const [skip, setSkip] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-
-  const loadOptions = async (query) => {
-    if (!hasMore && !query) return [];
-    const res = await fetch(
-      `https://dummyjson.com/users/search?q=${query}&limit=10&skip=${query ? 0 : skip}`,
-    );
-    const data = await res.json();
-    
-    const nextSkip = data.skip + data.limit;
-    if (nextSkip >= data.total) {
-      setHasMore(false);
-    } else {
-      setSkip(nextSkip);
-    }
-
-    return data.users.map((user) => ({
-      id: user.id,
-      label: `${user.firstName}`,
-      disabled: false,
-    }));
-  };
-
-  const editOption = (option) => {
-    return (
-      <span>
-        {emojiList[String(option.id % Object.keys(emojiList).length)]}
-        {option.label}
-      </span>
-    );
-  };
-
-  const loadDefaultOption = async (id) => {
-    const res = await fetch(`https://dummyjson.com/users/${id}`);
-    const data = await res.json();
-    return {
-      id: data.id,
-      label: `${data.firstName}`,
-      disabled: false,
-    };
-  };
+  const [currentQuery, setCurrentQuery] = useState("");
+  const [hasMoreData, setHasMoreData] = useState(true);
 
   const getStateOptions = () => {
     const result = [];
@@ -110,20 +75,87 @@ const Form = () => {
     return result;
   };
 
+  // useEffect(() => {
+  //   const fetchDefault = async () => {
+  //     const res = await fetch("https://dummyjson.com/users/50");
+  //     const data = await res.json();
+
+  //     const option = {
+  //       id: data.id,
+  //       label: data.firstName,
+  //       disabled: false,
+  //     };
+
+  //     setValue(option);
+  //     localStorage.setItem("SELECTED_USER", JSON.stringify(option));
+  //   };
+
+  //   fetchDefault();
+  // }, []);
+
+  const loadOptions = async (query) => {
+    const isNewQuery = query !== currentQuery;
+    let localSkip = skip;
+
+    if (isNewQuery) {
+      localSkip = 0;
+      setSkip(0);
+      setHasMoreData(true);
+      setCurrentQuery(query);
+    }
+
+    if (!hasMoreData && !isNewQuery) return [];
+
+    const res = await fetch(
+      `https://dummyjson.com/users/search?q=${query}&limit=10&skip=${localSkip}`,
+    );
+
+    const data = await res.json();
+
+    const nextSkip = data.skip + data.limit;
+    if (nextSkip >= data.total) {
+      setHasMoreData(false);
+    } else {
+      setSkip(nextSkip);
+    }
+
+    return data.users.map((user) => ({
+      id: user.id,
+      label: user.firstName,
+      disabled: false,
+    }));
+  };
+
+  const editOption = (option) => {
+    return (
+      <span>
+        {emojiList[option.id % Object.keys(emojiList).length]}
+        {option.label}
+      </span>
+    );
+  };
+
+  const handleOnChange = (option) => {
+     setValue(option);
+     if (option) {
+       localStorage.setItem("SELECTED_USER", JSON.stringify(option));
+     } else {
+       localStorage.removeItem("SELECTED_USER");
+     }
+  }
+
   return (
     <form>
       <UniversalSelect
         label="Users"
         loadOptions={loadOptions}
-        options={getStateOptions()}
+        //options={getStateOptions()}
         value={value}
-        onChange={setValue}
+        onChange={handleOnChange}
         closeOnOutsideClick
         isClearOptionAllow
         isSearchOptionsAllow
         //selectStyle={selectStyle}
-        //defaultSelectedOptionId={150}
-        //loadDefaultOption={loadDefaultOption}
         editOption={editOption}
       />
     </form>
