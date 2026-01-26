@@ -119,6 +119,13 @@ input {
   width: 100%;
   border-bottom: 0.1px solid #ccc;
 }
+.search-view {
+  padding: 10px;
+  width: 100%;
+  border-bottom: 0.1px solid #ccc;
+  padding-left: 170px;
+  color: rgb(38, 38, 207);
+}
 .no-custom-select-option {
   padding: 0px 15px;
   width: 100%;

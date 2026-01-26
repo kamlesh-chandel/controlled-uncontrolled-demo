@@ -17,79 +17,146 @@ const countryList = {
   Japan: ["Tokyo", "Osaka", "Kyoto", "Hokkaido", "Okinawa"],
 };
 
+const emojiList = {
+  0: "🥰",
+  1: "😀",
+  2: "🔥",
+  3: "⚡",
+  4: "💎",
+  5: "🚀",
+  6: "🎯",
+  7: "🌟",
+  8: "👑",
+  9: "🧠",
+  10: "🎉",
+  11: "💻",
+  12: "📌",
+  13: "📈",
+  14: "🛠️",
+  15: "🔍",
+  16: "🎵",
+  17: "🌈",
+  18: "🕶️",
+  19: "💡",
+  20: "🏆",
+};
+
 const selectStyle = {
-  selectWrapper: {height: "100px" },
-  optionsList: {backgroundColor: "black", color: "white" },
-  highlight: {backgroundColor:"orange"},
+  selectWrapper: { height: "100px" },
+  optionsList: { backgroundColor: "black", color: "white" },
+  highlight: { backgroundColor: "orange" },
   disabled: { backgroundColor: "rgb(230, 163, 163)" },
   selected: { backgroundColor: "orange" },
 };
 
 const Form = () => {
-  const [state, setState] = useState("");
-  const [country, setCountry] = useState("");
+  const [value, setValue] = useState(() => {
+    const stored = localStorage.getItem("SELECTED_USER");
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [skip, setSkip] = useState(0);
+  const [currentQuery, setCurrentQuery] = useState("");
+  const [hasMoreData, setHasMoreData] = useState(true);
 
-  useEffect(() => {
-    Object.entries(countryList).forEach(([key, cities]) => {
-      if (cities.includes(state)) {
-        setCountry(key);
-      }
-    });
-  }, [state]);
-
-  const getCountryOptions = (selectedState) => {
-    return Object.keys(countryList).map((country) => {
-      return {
-        label: country,
-        disabled:
-          selectedState && !countryList[country].includes(selectedState),
-      };
-    });
-  };
-
-  const getStateOptions = (selectedCountry) => {
+  const getStateOptions = () => {
     const result = [];
+    let id = 0;
+
     Object.keys(countryList).forEach((country) => {
-      const states = countryList[country];
-      for (let i = 0; i < states.length; i++) {
+      countryList[country].forEach((state) => {
         result.push({
-          label: states[i],
-          disabled: selectedCountry && country !== selectedCountry,
+          id: id++,
+          label: state,
+          disabled: false,
         });
-      }
+      });
     });
+
     return result;
   };
 
-  const onClear = (e) => {
-    e.stopPropagation();
-    setState("");
-    setCountry("");
+  // useEffect(() => {
+  //   const fetchDefault = async () => {
+  //     const res = await fetch("https://dummyjson.com/users/50");
+  //     const data = await res.json();
+
+  //     const option = {
+  //       id: data.id,
+  //       label: data.firstName,
+  //       disabled: false,
+  //     };
+
+  //     setValue(option);
+  //     localStorage.setItem("SELECTED_USER", JSON.stringify(option));
+  //   };
+
+  //   fetchDefault();
+  // }, []);
+
+  const loadOptions = async (query) => {
+    const isNewQuery = query !== currentQuery;
+    let localSkip = skip;
+
+    if (isNewQuery) {
+      localSkip = 0;
+      setSkip(0);
+      setHasMoreData(true);
+      setCurrentQuery(query);
+    }
+
+    if (!hasMoreData && !isNewQuery) return [];
+
+    const res = await fetch(
+      `https://dummyjson.com/users/search?q=${query}&limit=10&skip=${localSkip}`,
+    );
+
+    const data = await res.json();
+
+    const nextSkip = data.skip + data.limit;
+    if (nextSkip >= data.total) {
+      setHasMoreData(false);
+    } else {
+      setSkip(nextSkip);
+    }
+
+    return data.users.map((user) => ({
+      id: user.id,
+      label: user.firstName,
+      disabled: false,
+    }));
   };
+
+  const editOption = (option) => {
+    return (
+      <span>
+        {emojiList[option.id % Object.keys(emojiList).length]}
+        {option.label}
+      </span>
+    );
+  };
+
+  const handleOnChange = (option) => {
+     setValue(option);
+     if (option) {
+       localStorage.setItem("SELECTED_USER", JSON.stringify(option));
+     } else {
+       localStorage.removeItem("SELECTED_USER");
+     }
+  }
 
   return (
     <form>
       <UniversalSelect
-        label="State"
-        options={getStateOptions(country)}
-        value={state}
-        onChange={setState}
+        label="Users"
+        loadOptions={loadOptions}
+        //options={getStateOptions()}
+        value={value}
+        onChange={handleOnChange}
         closeOnOutsideClick
         isClearOptionAllow
-        onClear={onClear}
         isSearchOptionsAllow
         //selectStyle={selectStyle}
-      />
-      <UniversalSelect
-        label="Country"
-        options={getCountryOptions(state)}
-        value={country}
-        onChange={setCountry}
-        closeOnOutsideClick
-        isClearOptionAllow
-        onClear={onClear}
-        isSearchOptionsAllow
-        //selectStyle = {selectStyle}
+        editOption={editOption}
       />
     </form>
   );
