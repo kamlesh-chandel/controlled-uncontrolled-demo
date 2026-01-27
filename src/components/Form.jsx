@@ -51,12 +51,16 @@ const selectStyle = {
 
 const Form = () => {
   const [value, setValue] = useState(() => {
-    const stored = localStorage.getItem("SELECTED_USER");
+  const stored = localStorage.getItem("SELECTED_USER");
     return stored ? JSON.parse(stored) : null;
   });
   const [skip, setSkip] = useState(0);
   const [currentQuery, setCurrentQuery] = useState("");
   const [hasMoreData, setHasMoreData] = useState(true);
+  const [selectedOptionsList, setSelectedOptionsList] = useState(() => {
+    const stored = localStorage.getItem("SELECTED_USERS");
+    return stored ? JSON.parse(stored) : [];
+  });
 
   const getStateOptions = () => {
     const result = [];
@@ -144,6 +148,23 @@ const Form = () => {
      }
   }
 
+  const handleSelectedOptionsList = (option, pushOption = true) => {
+    if(!option) {
+      setSelectedOptionsList([]);
+      return;
+    }
+    if(pushOption) {
+      setSelectedOptionsList((prev) => [...prev, option]);
+    }else{
+      const filteredOptons = selectedOptionsList.filter((value) => value.id !== option.id)
+      setSelectedOptionsList(filteredOptons);
+    }
+  }
+
+  useEffect(() => {
+    localStorage.setItem("SELECTED_USERS", JSON.stringify(selectedOptionsList));
+  },[selectedOptionsList])
+
   return (
     <form>
       <UniversalSelect
@@ -157,6 +178,8 @@ const Form = () => {
         isSearchOptionsAllow
         //selectStyle={selectStyle}
         editOption={editOption}
+        selectedOptionsList={selectedOptionsList}
+        handleSelectedOptionsList={handleSelectedOptionsList}
       />
     </form>
   );
