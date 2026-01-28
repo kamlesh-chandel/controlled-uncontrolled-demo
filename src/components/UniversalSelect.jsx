@@ -13,7 +13,8 @@ function UniversalSelect({
   isClearOptionAllow = true,
   isSearchOptionsAllow = true,
   selectStyle = {},
-  editOption,
+  renderOption,
+  renderSelectedOption,
   handleSelectedOptionsList,
   selectedOptionsList,
 }) {
@@ -98,24 +99,28 @@ function UniversalSelect({
   const closeOptions = () => {
     const storedValue = localStorage.getItem(SELECTED_OPTION);
     if (storedValue) setSearch(JSON.parse(storedValue).label);
+    else setSearch("");
     setFocusedIndex(-1);
     setIsOpen(false);
   };
 
   const handleSelect = (option) => {
     if (option.disabled) return;
-    updateSelectedValue(option);    
-    if (isSearchOptionsAllow)
-      setSearch(option.label);
+    updateSelectedValue(option);
+    if (isSearchOptionsAllow) setSearch(option.label);
     closeOptions();
   };
 
   const handleMultipleSelect = (e, option) => {
     if (option.disabled) return;
-    
+
     if (e.target.checked) handleSelectedOptionsList(option);
     else handleSelectedOptionsList(option, false);
+
+    const index = filteredOptions.findIndex((opt) => opt.id == option.id);
+    setFocusedIndex(index);
     setSearch("");
+
     requestAnimationFrame(() => {
       triggerRef.current?.focus();
     });
@@ -126,12 +131,10 @@ function UniversalSelect({
 
     if (e.key === "ArrowDown") {
       setFocusedIndex((prev) => (prev + 1) % filteredOptions.length);
-
     } else if (e.key === "ArrowUp") {
       setFocusedIndex((prev) =>
         prev <= 0 ? filteredOptions.length - 1 : prev - 1,
       );
-
     } else if (e.key === "Enter") {
       e.preventDefault();
       const option = filteredOptions[focusedIndex];
@@ -139,14 +142,13 @@ function UniversalSelect({
       if (!option || option.disabled) return;
       if (!selectedOptionsList) {
         handleSelect(option);
-      } else {        
+      } else {
         handleSelectedOptionsList(option);
-      } 
- 
+      }
+
       requestAnimationFrame(() => {
         triggerRef.current?.focus();
       });
-
     } else if (e.key === "Escape") {
       closeOptions();
     }
@@ -181,17 +183,81 @@ function UniversalSelect({
     setSearch("");
   };
 
+  const getOptionStyle = (isDisabled, isFocused, isSelected, selectStyle) => {
+    return {
+      ...(isDisabled && selectStyle?.disabledOption),
+      ...(isFocused && selectStyle?.highlightOption),
+      ...(isSelected && selectStyle?.selectedOption),
+    };
+  };
+
+  const getOptionClassName = ({ isDisabled, isFocused, isSelected }) => {
+    return [
+      "custom-select-option",
+      isDisabled && "disabled",
+      isSelected && "selected",
+      isFocused && "highlight",
+    ].join(" ");
+  };
+
+  const handleOptionClick = (option) => (e) => {
+    e.stopPropagation();
+    if (!selectedOptionsList) {
+      handleSelect(option);
+    }
+  };
+
+  const handleClearAllClick = (e) => {
+    e.stopPropagation();
+    handleSelectedOptionsList();
+    setFocusedIndex(-1);
+  };
+
   const renderOptions = () => {
     return filteredOptions.map((option, index) => {
       const isDisabled = option.disabled;
       const isFocused = index === focusedIndex;
       const isSelected = selectedValue?.id === option.id;
-      const inlineStyle = {
-        ...(isDisabled && selectStyle?.disabled ? selectStyle.disabled : {}),
-        ...(isFocused && selectStyle?.highlight ? selectStyle.highlight : {}),
-        ...(selectedValue === option.label && selectStyle?.selected
-          ? selectStyle.selected
-          : {}),
+
+      const inlineStyle = getOptionStyle(
+        isDisabled,
+        isFocused,
+        isSelected,
+        selectStyle,
+      );
+
+      const className = getOptionClassName({
+        isDisabled,
+        isFocused,
+        isSelected,
+      });
+
+      const renderOptionContent = () => {
+        if (!selectedOptionsList) {
+          return (
+            <span className="option-label">
+              {renderOption ? renderOption(option) : option.label}
+            </span>
+          );
+        }
+        return (
+          <label
+            htmlFor={option.id}
+            className={`option-label ${isDisabled && "disabled"}`}
+          >
+            <input
+              type="checkbox"
+              id={option.id}
+              name="options"
+              checked={selectedOptionsList.some(
+                (value) => value.id == option.id,
+              )}
+              disabled={option.disabled}
+              onChange={(e) => handleMultipleSelect(e, option)}
+            />
+            {renderOption ? renderOption(option) : option.label}
+          </label>
+        );
       };
 
       return (
@@ -199,130 +265,128 @@ function UniversalSelect({
           key={option.id}
           ref={isFocused ? highlightedRef : null}
           style={inlineStyle}
-          className={`custom-select-option
-          ${isDisabled ? "disabled" : ""}
-          ${isSelected ? "selected" : ""}
-          ${isFocused ? "highlight" : ""}
-        `}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!selectedOptionsList) handleSelect(option);
-          }}
+          className={className}
+          onClick={handleOptionClick(option)}
         >
-          {!selectedOptionsList ? (
-            <span className="option-label">
-              {editOption ? editOption(option) : option.label}
-            </span>
-          ) : (
-            <label
-              htmlFor={option.id}
-              className={`option-label ${isDisabled ? "disabled" : ""}`}
-            >
-              <input
-                type="checkbox"
-                id={option.id}
-                name="options"
-                checked={selectedOptionsList.some(
-                  (value) => value.id == option.id,
-                )}
-                disabled={option.disabled}
-                onChange={(e) => handleMultipleSelect(e, option)}
-              />
-              {editOption ? editOption(option) : option.label}
-            </label>
-          )}
+          {renderOptionContent()}
         </li>
       );
     });
   };
 
-  const applyStyle = (style) => {
-    return style ? style : {};
+  const renderActionIcon = () => {
+    if(loading) {
+      return <span>Loading...</span>
+    }
+    const arrow = isOpen ? "↑" : "↓";
+
+    if (!selectedOptionsList) {
+      if (selectedValue && isClearOptionAllow) {
+        return (
+          <span
+            onClick={handleClear}
+          >
+            ⛌
+          </span>
+        );
+      }
+      return <span>{arrow}</span>;
+    }
+
+    if (selectedOptionsList.length === 0) {
+      return <span>{arrow}</span>;
+    }
+
+    if (isClearOptionAllow) {
+      return <span onClick={handleClearAllClick}>Clear</span>;
+    }
+
+    return <span>{arrow}</span>;
+  };
+
+  const renderSelectContent = () => {
+
+    const renderSelectedOptionList = () => {
+      return selectedOptionsList.map((option) => (
+        <div className="multiple-options" key={option.id}>
+          {renderSelectedOption ? renderSelectedOption(option) : option.label}
+          <span
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSelectedOptionsList(option, false);
+            }}
+          >
+            ⤬
+          </span>
+        </div>
+      ));
+    }
+  
+    const renderSearchInput = () => {
+      return (
+        <input
+          onChange={handleSearch}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsOpen(true);
+          }}
+          placeholder="Search Here"
+          value={search}
+        />
+      );
+    }
+
+    if (isSearchOptionsAllow) {
+      if (!selectedOptionsList || selectedOptionsList.length == 0) {
+        return renderSearchInput();
+      }
+      return (
+        <div className="multiple-options-container">
+          {renderSelectedOptionList()}
+          {renderSearchInput()}
+        </div>
+      );
+    }
+
+    if (!selectedOptionsList || selectedOptionsList.length == 0) {
+      return (
+        <p>
+          {selectedValue
+            ? renderOption
+              ? renderOption(selectedValue)
+              : selectedValue.label
+            : "Please Select Option"}
+        </p>
+      );
+    }
+
+    return renderSelectedOptionList();
   };
 
   return (
     <div
       className="custom-select"
-      style={applyStyle(selectStyle.selectWrapper)}
+      style={selectStyle.selectWrapper && selectStyle.selectWrapper}
     >
       <label className="custom-select-label">{label}</label>
 
-      <button
+      <div
         type="button"
         ref={triggerRef}
         className="custom-select-trigger"
         onClick={handleToggleOptions}
         onKeyDown={handleKeyboardNavigation}
       >
-        {isSearchOptionsAllow ? (
-          !selectedOptionsList || selectedOptionsList.length == 0 ? (
-            <input
-              onChange={handleSearch}
-              placeholder="Search Here"
-              value={search}
-            />
-          ) : (
-            <div className="multiple-options-container">
-              {selectedOptionsList.map((option) => (
-                <div className="multiple-options" key={option.id}>
-                  {editOption ? editOption(option) : option.label}
-                  <span
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSelectedOptionsList(option, false);
-                    }}
-                  >
-                    ⤬
-                  </span>
-                </div>
-              ))}
-              <input
-                onChange={handleSearch}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsOpen(true);
-                }}
-                placeholder="Search Here"
-                value={search}
-              />
-            </div>
-          )
-        ) : (
-          <p>
-            {selectedValue
-              ? editOption
-                ? editOption(selectedValue)
-                : selectedValue.label
-              : "Please Select Option"}
-          </p>
-        )}
-
-        {!selectedOptionsList ? (
-          selectedValue && isClearOptionAllow ? (
-            <span onClick={handleClear}>⛌</span>
-          ) : (
-            <span>{isOpen ? "↑" : "↓"}</span>
-          )
-        ) : selectedOptionsList.length == 0 ? (
-          <span>{isOpen ? "↑" : "↓"}</span>
-        ) : (
-          <span
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSelectedOptionsList();
-            }}
-          >
-            Clear
-          </span>
-        )}
-      </button>
+        {renderSelectContent()}
+        {renderActionIcon()}
+      </div>
 
       {isOpen && (
         <>
           {filteredOptions.length > 0 && (
             <ul
               className="custom-select-options"
-              style={applyStyle(selectStyle.optionsList)}
+              style={selectStyle.optionsList && selectStyle.optionsList}
               onScroll={handleInfiniteScroll}
             >
               {renderOptions()}

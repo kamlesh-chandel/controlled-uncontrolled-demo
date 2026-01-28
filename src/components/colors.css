@@ -1,0 +1,18 @@
+:root {
+  --white: #ffffff;
+  --black: #000000;
+
+  --light-gray: #f5f7fa;
+  --gray: #ccc;
+  --dark-gray: #333;
+  --muted-gray: rgb(65, 64, 64);
+  --disabled-gray: gray;
+
+  --blue: #2563EB;
+  --light-blue: rgb(164, 223, 243);
+  --lighter-blue: rgb(210, 240, 249);
+  --bright-blue: rgb(6, 186, 240);
+  --link-blue: rgb(38, 38, 207);
+
+  --shadow-black: rgba(0, 0, 0, 0.1);
+}
