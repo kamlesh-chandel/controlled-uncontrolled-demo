@@ -14,6 +14,8 @@ function UniversalSelect({
   isSearchOptionsAllow = true,
   selectStyle = {},
   editOption,
+  handleSelectedOptionsList,
+  selectedOptionsList,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [internalValue, setInternalValue] = useState(() => {
@@ -28,6 +30,7 @@ function UniversalSelect({
   const baseOptions = loadOptions ? asyncOptions : options;
 
   const highlightedRef = useRef(null);
+  const triggerRef = useRef(null);
 
   useEffect(() => {
     if (value?.label) {
@@ -101,9 +104,21 @@ function UniversalSelect({
 
   const handleSelect = (option) => {
     if (option.disabled) return;
-    updateSelectedValue(option);
-    if (isSearchOptionsAllow) setSearch(option.label);
+    updateSelectedValue(option);    
+    if (isSearchOptionsAllow)
+      setSearch(option.label);
     closeOptions();
+  };
+
+  const handleMultipleSelect = (e, option) => {
+    if (option.disabled) return;
+    
+    if (e.target.checked) handleSelectedOptionsList(option);
+    else handleSelectedOptionsList(option, false);
+    setSearch("");
+    requestAnimationFrame(() => {
+      triggerRef.current?.focus();
+    });
   };
 
   const handleKeyboardNavigation = (e) => {
@@ -111,15 +126,27 @@ function UniversalSelect({
 
     if (e.key === "ArrowDown") {
       setFocusedIndex((prev) => (prev + 1) % filteredOptions.length);
+
     } else if (e.key === "ArrowUp") {
       setFocusedIndex((prev) =>
         prev <= 0 ? filteredOptions.length - 1 : prev - 1,
       );
+
     } else if (e.key === "Enter") {
       e.preventDefault();
       const option = filteredOptions[focusedIndex];
+
       if (!option || option.disabled) return;
-      handleSelect(option);
+      if (!selectedOptionsList) {
+        handleSelect(option);
+      } else {        
+        handleSelectedOptionsList(option);
+      } 
+ 
+      requestAnimationFrame(() => {
+        triggerRef.current?.focus();
+      });
+
     } else if (e.key === "Escape") {
       closeOptions();
     }
@@ -179,10 +206,31 @@ function UniversalSelect({
         `}
           onClick={(e) => {
             e.stopPropagation();
-            handleSelect(option);
+            if (!selectedOptionsList) handleSelect(option);
           }}
         >
-          {editOption ? editOption(option) : option.label}
+          {!selectedOptionsList ? (
+            <span className="option-label">
+              {editOption ? editOption(option) : option.label}
+            </span>
+          ) : (
+            <label
+              htmlFor={option.id}
+              className={`option-label ${isDisabled ? "disabled" : ""}`}
+            >
+              <input
+                type="checkbox"
+                id={option.id}
+                name="options"
+                checked={selectedOptionsList.some(
+                  (value) => value.id == option.id,
+                )}
+                disabled={option.disabled}
+                onChange={(e) => handleMultipleSelect(e, option)}
+              />
+              {editOption ? editOption(option) : option.label}
+            </label>
+          )}
         </li>
       );
     });
@@ -201,24 +249,71 @@ function UniversalSelect({
 
       <button
         type="button"
+        ref={triggerRef}
         className="custom-select-trigger"
         onClick={handleToggleOptions}
         onKeyDown={handleKeyboardNavigation}
       >
         {isSearchOptionsAllow ? (
-          <input
-            onChange={handleSearch}
-            placeholder="Please Select Option"
-            value={search}
-          />
+          !selectedOptionsList || selectedOptionsList.length == 0 ? (
+            <input
+              onChange={handleSearch}
+              placeholder="Search Here"
+              value={search}
+            />
+          ) : (
+            <div className="multiple-options-container">
+              {selectedOptionsList.map((option) => (
+                <div className="multiple-options" key={option.id}>
+                  {editOption ? editOption(option) : option.label}
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectedOptionsList(option, false);
+                    }}
+                  >
+                    ⤬
+                  </span>
+                </div>
+              ))}
+              <input
+                onChange={handleSearch}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(true);
+                }}
+                placeholder="Search Here"
+                value={search}
+              />
+            </div>
+          )
         ) : (
-          <p>{selectedValue?.label || "Please Select Option"}</p>
+          <p>
+            {selectedValue
+              ? editOption
+                ? editOption(selectedValue)
+                : selectedValue.label
+              : "Please Select Option"}
+          </p>
         )}
 
-        {selectedValue && isClearOptionAllow ? (
-          <span onClick={handleClear}>⛌</span>
-        ) : (
+        {!selectedOptionsList ? (
+          selectedValue && isClearOptionAllow ? (
+            <span onClick={handleClear}>⛌</span>
+          ) : (
+            <span>{isOpen ? "↑" : "↓"}</span>
+          )
+        ) : selectedOptionsList.length == 0 ? (
           <span>{isOpen ? "↑" : "↓"}</span>
+        ) : (
+          <span
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSelectedOptionsList();
+            }}
+          >
+            Clear
+          </span>
         )}
       </button>
 

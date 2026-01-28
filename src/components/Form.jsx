@@ -57,6 +57,10 @@ const Form = () => {
   const [skip, setSkip] = useState(0);
   const [currentQuery, setCurrentQuery] = useState("");
   const [hasMoreData, setHasMoreData] = useState(true);
+  const [selectedOptionsList, setSelectedOptionsList] = useState(() => {
+    const stored = localStorage.getItem("SELECTED_USERS");
+    return stored ? JSON.parse(stored) : [];
+  });
 
   const getStateOptions = () => {
     const result = [];
@@ -76,25 +80,47 @@ const Form = () => {
   };
 
   // useEffect(() => {
+  //   let defaultOptionId = 100;
   //   const fetchDefault = async () => {
-  //     const res = await fetch("https://dummyjson.com/users/50");
+  //     const res = await fetch(`https://dummyjson.com/users/${defaultOptionId}`);
   //     const data = await res.json();
-
-  //     const option = {
+  //     const defaultOption = {
   //       id: data.id,
   //       label: data.firstName,
   //       disabled: false,
   //     };
-
-  //     setValue(option);
-  //     localStorage.setItem("SELECTED_USER", JSON.stringify(option));
+  //     setValue(defaultOption);
+  //     localStorage.setItem("SELECTED_USER", JSON.stringify(defaultOption));
   //   };
 
   //   fetchDefault();
   // }, []);
 
+  useEffect(() => {
+    const defaultOptionIdList = [50,12];
+    let optionList = [];
+    const fetchDefaults = async () => {
+    defaultOptionIdList.map(async (id) => {
+      const res = await fetch(`https://dummyjson.com/users/${id}`);
+      const data = await res.json();
+      const defaultOption = {
+        id: data.id,
+        label: data.firstName,
+        disabled: false,
+      };
+      optionList.push(defaultOption);
+      setSelectedOptionsList(optionList);
+    });
+  }
+  setValue(null);
+  localStorage.setItem("SELECTED_USER", null);
+  fetchDefaults();
+  }, []);
+
   const loadOptions = async (query) => {
-    const isNewQuery = query !== currentQuery;
+    const encodedQuery = encodeURIComponent(query);
+    
+    const isNewQuery = encodedQuery !== currentQuery;
     let localSkip = skip;
 
     if (isNewQuery) {
@@ -107,7 +133,7 @@ const Form = () => {
     if (!hasMoreData && !isNewQuery) return [];
 
     const res = await fetch(
-      `https://dummyjson.com/users/search?q=${query}&limit=10&skip=${localSkip}`,
+      `https://dummyjson.com/users/search?q=${encodedQuery}&limit=10&skip=${localSkip}`,
     );
 
     const data = await res.json();
@@ -127,22 +153,38 @@ const Form = () => {
   };
 
   const editOption = (option) => {
-    return (
-      <span>
-        {emojiList[option.id % Object.keys(emojiList).length]}
-        {option.label}
-      </span>
-    );
+    return `${emojiList[option.id % Object.keys(emojiList).length]} ${option.label}`;
   };
 
   const handleOnChange = (option) => {
-     setValue(option);
-     if (option) {
-       localStorage.setItem("SELECTED_USER", JSON.stringify(option));
-     } else {
-       localStorage.removeItem("SELECTED_USER");
-     }
-  }
+    setValue(option);
+    if (option) {
+      localStorage.setItem("SELECTED_USER", JSON.stringify(option));
+    } else {
+      localStorage.removeItem("SELECTED_USER");
+    }
+  };
+
+  const handleSelectedOptionsList = (option, pushOption = true) => {
+    console.log(pushOption);
+    
+    if (!option) {
+      setSelectedOptionsList([]);
+      return;
+    }
+    if (pushOption) {
+      setSelectedOptionsList((prev) => [...prev, option]);
+    } else {
+      const filteredOptons = selectedOptionsList.filter(
+        (value) => value.id !== option.id,
+      );
+      setSelectedOptionsList(filteredOptons);
+    }
+  };
+
+  useEffect(() => {
+    localStorage.setItem("SELECTED_USERS", JSON.stringify(selectedOptionsList));
+  }, [selectedOptionsList]);
 
   return (
     <form>
@@ -157,6 +199,8 @@ const Form = () => {
         isSearchOptionsAllow
         //selectStyle={selectStyle}
         editOption={editOption}
+        selectedOptionsList={selectedOptionsList}
+        handleSelectedOptionsList={handleSelectedOptionsList}
       />
     </form>
   );

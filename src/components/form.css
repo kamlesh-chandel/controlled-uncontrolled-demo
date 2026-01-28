@@ -77,9 +77,6 @@ input {
 .custom-select-trigger:hover {
   border-color: #646cff;
 }
-.custom-select-trigger span {
-  color: black;
-}
 .custom-select-trigger p {
   padding-left: 5px;
 }
@@ -102,7 +99,7 @@ input {
   position: absolute;
   top: 100%;
   width: 100%;
-  max-height: 30px;
+  max-height: 40px;
   border: 1px solid #ccc;
   background-color: #fff;
   border-radius: 6px;
@@ -114,7 +111,7 @@ input {
 
 }
 .custom-select-option {
-  padding: 10px 15px;
+  height: 45px;
   cursor: pointer;
   width: 100%;
   border-bottom: 0.1px solid #ccc;
@@ -130,6 +127,7 @@ input {
   padding: 0px 15px;
   width: 100%;
   font-size: 16px;
+  color: rgb(65, 64, 64);
 }
 .custom-select-option:hover{
   background-color: rgb(164, 223, 243);
@@ -156,4 +154,51 @@ input {
 .no-option{
   font-size: 5px;
   height: 5px;
+}
+
+.option-label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  height: 100%;
+  padding: 10px 15px;
+}
+.option-label input{
+  width: 7%;
+  height: 50%;
+}
+.multiple-options-container{
+  width: 90%;
+  display: flex;
+  align-items: center;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.multiple-options-container input{
+  min-width: 35%;
+}
+.multiple-options{
+  min-width: 30%;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  border-radius: 15px;
+  padding: 5px;
+  margin: 0 2px;
+  background-color: #2563EB;
+  color: white;
+  font-size: 14px;
+}
+.multiple-options span{
+  background-color: transparent;
+  border-radius:15px;
+  color: white;
+  border: none;
+  cursor: pointer;
+    font-size: 18px;
+}
+
+.option-label:has(input:checked) {
+  background-color: rgb(164, 223, 243);
 }
