@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import UniversalSelect from "./UniversalSelect";
+import "./colors.css";
 import "./form.css";
 
 const countryList = {
@@ -41,22 +42,28 @@ const emojiList = {
   20: "🏆",
 };
 
+//customize select component style
 const selectStyle = {
   selectWrapper: { height: "100px" },
   optionsList: { backgroundColor: "black", color: "white" },
-  highlight: { backgroundColor: "orange" },
-  disabled: { backgroundColor: "rgb(230, 163, 163)" },
-  selected: { backgroundColor: "orange" },
+  highlightOption: { backgroundColor: "orange" },
+  disabledOption: { backgroundColor: "rgb(230, 163, 163)" },
+  selectedOption: { backgroundColor: "orange" },
+
 };
 
 const Form = () => {
+  //single selected option
   const [value, setValue] = useState(() => {
     const stored = localStorage.getItem("SELECTED_USER");
     return stored ? JSON.parse(stored) : null;
   });
+
   const [skip, setSkip] = useState(0);
   const [currentQuery, setCurrentQuery] = useState("");
   const [hasMoreData, setHasMoreData] = useState(true);
+
+  //multiple selected option
   const [selectedOptionsList, setSelectedOptionsList] = useState(() => {
     const stored = localStorage.getItem("SELECTED_USERS");
     return stored ? JSON.parse(stored) : [];
@@ -79,6 +86,7 @@ const Form = () => {
     return result;
   };
 
+  //default selected option
   // useEffect(() => {
   //   let defaultOptionId = 100;
   //   const fetchDefault = async () => {
@@ -96,26 +104,26 @@ const Form = () => {
   //   fetchDefault();
   // }, []);
 
-  useEffect(() => {
-    const defaultOptionIdList = [50,12];
-    let optionList = [];
-    const fetchDefaults = async () => {
-    defaultOptionIdList.map(async (id) => {
-      const res = await fetch(`https://dummyjson.com/users/${id}`);
-      const data = await res.json();
-      const defaultOption = {
-        id: data.id,
-        label: data.firstName,
-        disabled: false,
-      };
-      optionList.push(defaultOption);
-      setSelectedOptionsList(optionList);
-    });
-  }
-  setValue(null);
-  localStorage.setItem("SELECTED_USER", null);
-  fetchDefaults();
-  }, []);
+  //default multiple selected options
+  // useEffect(() => {
+
+  //   const defaultOptionIdList = [50,12];
+  //   let optionList = [];
+  //   const fetchDefaults = async () => {
+  //   defaultOptionIdList.map(async (id) => {
+  //     const res = await fetch(`https://dummyjson.com/users/${id}`);
+  //     const data = await res.json();
+  //     const defaultOption = {
+  //       id: data.id,
+  //       label: data.firstName,
+  //       disabled: false,
+  //     };
+  //     optionList.push(defaultOption);
+  //     setSelectedOptionsList(optionList);
+  //   });
+  // }
+  // if (!localStorage.getItem("SELECTED_USERS")) fetchDefaults();
+  // }, []);
 
   const loadOptions = async (query) => {
     const encodedQuery = encodeURIComponent(query);
@@ -152,10 +160,17 @@ const Form = () => {
     }));
   };
 
-  const editOption = (option) => {
+  //render option
+  const renderOption = (option) => {
     return `${emojiList[option.id % Object.keys(emojiList).length]} ${option.label}`;
   };
 
+  //render selected option
+  const renderSelectedOption = (option) => {
+    return `${option.label} ${emojiList[option.id % Object.keys(emojiList).length]}`;
+  };
+
+  //handle selected option
   const handleOnChange = (option) => {
     setValue(option);
     if (option) {
@@ -165,8 +180,8 @@ const Form = () => {
     }
   };
 
+  //handle multiple selected options
   const handleSelectedOptionsList = (option, pushOption = true) => {
-    console.log(pushOption);
     
     if (!option) {
       setSelectedOptionsList([]);
@@ -182,6 +197,7 @@ const Form = () => {
     }
   };
 
+  //persist multiple selected options
   useEffect(() => {
     localStorage.setItem("SELECTED_USERS", JSON.stringify(selectedOptionsList));
   }, [selectedOptionsList]);
@@ -190,15 +206,16 @@ const Form = () => {
     <form>
       <UniversalSelect
         label="Users"
-        loadOptions={loadOptions}
-        //options={getStateOptions()}
         value={value}
         onChange={handleOnChange}
-        closeOnOutsideClick
-        isClearOptionAllow
-        isSearchOptionsAllow
+        loadOptions={loadOptions}
+        //options={getStateOptions()}
+        //closeOnOutsideClick
+        //isClearOptionAllow
+        //isSearchOptionsAllow
         //selectStyle={selectStyle}
-        editOption={editOption}
+        renderOption={renderOption}
+        renderSelectedOption={renderSelectedOption}
         selectedOptionsList={selectedOptionsList}
         handleSelectedOptionsList={handleSelectedOptionsList}
       />
