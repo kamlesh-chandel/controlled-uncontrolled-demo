@@ -77,9 +77,6 @@ input {
 .custom-select-trigger:hover {
   border-color: #646cff;
 }
-.custom-select-trigger span {
-  color: black;
-}
 .custom-select-trigger p {
   padding-left: 5px;
 }
@@ -102,7 +99,7 @@ input {
   position: absolute;
   top: 100%;
   width: 100%;
-  max-height: 30px;
+  max-height: 40px;
   border: 1px solid #ccc;
   background-color: #fff;
   border-radius: 6px;
@@ -130,6 +127,7 @@ input {
   padding: 0px 15px;
   width: 100%;
   font-size: 16px;
+  color: rgb(65, 64, 64);
 }
 .custom-select-option:hover{
   background-color: rgb(164, 223, 243);
@@ -174,25 +172,31 @@ input {
   width: 90%;
   display: flex;
   align-items: center;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.multiple-options-container input{
+  min-width: 35%;
 }
 .multiple-options{
-  width: 15%;
+  min-width: 30%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  border-radius: 10px;
-  padding: 2px;
+  justify-content: space-around;
+  border-radius: 15px;
+  padding: 5px;
   margin: 0 2px;
-  background-color: gray;
+  background-color: #2563EB;
   color: white;
-  font-size: 12px;
+  font-size: 14px;
 }
 .multiple-options span{
   background-color: transparent;
+  border-radius:15px;
   color: white;
   border: none;
-  font-size: 24px;
   cursor: pointer;
+    font-size: 18px;
 }
 
 .option-label:has(input:checked) {
