@@ -103,7 +103,6 @@ function UniversalSelect({
   };
 
   const handleSelect = (option) => {
-    console.log("hii");
     
     if (option.disabled) return;
     updateSelectedValue(option);

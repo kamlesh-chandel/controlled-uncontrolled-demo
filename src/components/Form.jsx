@@ -67,6 +67,8 @@ const Form = () => {
     return stored ? JSON.parse(stored) : [];
   });
 
+  const [defaultOptionId, setDefaultOptionId] = useState(1);
+
   const getStateOptions = () => {
     const result = [];
     let id = 0;
@@ -86,7 +88,6 @@ const Form = () => {
 
   //default selected option
   useEffect(() => {
-    let defaultOptionId = 100;
     const fetchDefault = async () => {
       const res = await fetch(`https://dummyjson.com/users/${defaultOptionId}`);
       const data = await res.json();
@@ -100,7 +101,7 @@ const Form = () => {
     };
 
     fetchDefault();
-  }, []);
+  }, [defaultOptionId]);
 
   //default multiple selected options
   useEffect(() => {
@@ -119,7 +120,8 @@ const Form = () => {
       setSelectedOptionsList(optionList);
     });
   }
-  if (!localStorage.getItem("SELECTED_USERS")) fetchDefaults();
+  fetchDefaults();
+
   }, []);
 
   const loadOptions = async (query) => {
