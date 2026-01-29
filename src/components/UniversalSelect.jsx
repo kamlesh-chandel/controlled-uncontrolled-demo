@@ -1,87 +1,66 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import "./form.css";
 
+const STORAGE_KEY = "UNIVERSAL_SELECT_VALUE";
+
 function UniversalSelect({
   options = [],
   loadOptions,
   value,
   onChange,
   label,
+  isMultiSelectAllow = false,
   closeOnOutsideClick = true,
   isClearOptionAllow = true,
   isSearchOptionsAllow = true,
   selectStyle = {},
   renderOption,
   renderSelectedOption,
-  handleSelectedOptionsList,
-  selectedOptionsList,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [internalValue, setInternalValue] = useState(() => {
-    const stored = localStorage.getItem("SELECTED_USER");
-    return stored ? JSON.parse(stored) : null;
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : isMultiSelectAllow ? [] : null;
   });
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [asyncOptions, setAsyncOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const selectedValue = value !== undefined ? value : internalValue;
-  const baseOptions = loadOptions ? asyncOptions : options;
-
+  
   const highlightedRef = useRef(null);
   const triggerRef = useRef(null);
 
-  useEffect(() => {
-    if (value?.label) {
-      setSearch(value.label);
-      return;
-    }
+  const normalizedValue = isMultiSelectAllow
+    ? Array.isArray(selectedValue)
+      ? selectedValue
+      : []
+    : selectedValue;
 
-    const stored = localStorage.getItem("SELECTED_USER");
-    if (!stored) return;
-
-    const parsed = JSON.parse(stored);
-    setSearch(parsed.label);
-  }, [value]);
+  const baseOptions = loadOptions ? asyncOptions : options;
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchOptions(true);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [search]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedValue));
+  }, [normalizedValue]);
 
   useEffect(() => {
-    if (!closeOnOutsideClick) return;
-    document.addEventListener("click", closeOptions);
-    return () => {
-      document.removeEventListener("click", closeOptions);
-    };
-  }, [closeOnOutsideClick]);
-
-  useLayoutEffect(() => {
-    highlightedRef?.current?.scrollIntoView({ top:0 });
-  }, [focusedIndex]);
-
-  const filteredOptions = useMemo(() => {
-    if (loadOptions) return baseOptions;
-    return baseOptions.filter((option) =>
-      option.label.toLowerCase().includes(search.toLowerCase()),
-    );
-  }, [baseOptions, search, loadOptions]);
-
-  const updateSelectedValue = (option) => {
-    if (value === undefined) {
-      setInternalValue(option);
-    }else{
-    onChange(option);
+    if (!isMultiSelectAllow && normalizedValue?.label) {
+      setSearch(normalizedValue.label);
     }
-    if (option) {
-      localStorage.setItem("SELECTED_USER", JSON.stringify(option));
-    } else {
-      localStorage.removeItem("SELECTED_USER");
-    }
-  };
+  }, [normalizedValue, isMultiSelectAllow]);
+
+  // useEffect(() => {
+  //   if (value?.label) {
+  //     setSearch(value.label);
+  //     return;
+  //   }
+
+  //   const stored = localStorage.getItem("SELECTED_USER");
+  //   if (!stored) return;
+
+  //   const parsed = JSON.parse(stored);
+  //   setSearch(parsed.label);
+  // }, [value]);
 
   const fetchOptions = async (reset = false) => {
     if (!loadOptions) return;
@@ -94,60 +73,140 @@ function UniversalSelect({
     setAsyncOptions((prev) => (reset ? result : [...prev, ...result]));
   };
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchOptions(true);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    if (!closeOnOutsideClick) return;
+
+    document.addEventListener("click", closeOptions);
+    return () => {
+      document.removeEventListener("click", closeOptions);
+    };
+  }, [closeOnOutsideClick]);
+
+  useLayoutEffect(() => {
+    highlightedRef?.current?.scrollIntoView({ top: 0 });
+  }, [focusedIndex]);
+
+  const filteredOptions = useMemo(() => {
+    if (loadOptions) return baseOptions;
+    if(!isSearchOptionsAllow) return baseOptions;
+    return baseOptions.filter((option) =>
+      option.label.toLowerCase().includes(search.toLowerCase()),
+    );
+  }, [baseOptions, search, loadOptions]);
+
+  //updateValue
+  const updateSelectedValue = (newValue) => {
+    if (value === undefined) {
+      setInternalValue(newValue);
+    }
+    onChange?.(newValue);
+  };
+
+  const isOptionSelected = (option) => {
+    if (!isMultiSelectAllow) {
+      return normalizedValue?.id === option.id;
+    }
+    return normalizedValue.some((value) => value.id === option.id);
+  };
+
   const closeOptions = () => {
-    const storedValue = localStorage.getItem("SELECTED_USER");
-    if (storedValue) setSearch(JSON.parse(storedValue).label);
-    else setSearch("");
+    if (isMultiSelectAllow) {
+      setSearch("");
+    } else {
+      const storedValue = localStorage.getItem(STORAGE_KEY);
+      if (storedValue) {
+        const parsed = JSON.parse(storedValue);
+        if (parsed) {
+          if(parsed.label){
+
+            setSearch(parsed?.label);
+          }else{
+            setSearch("");
+          }
+          
+        } else {
+          setSearch("");
+        }
+      }else{
+        setSearch("");
+      }
+    }
     setFocusedIndex(-1);
+    console.log("hello");
+    console.log(isOpen);
+    
     setIsOpen(false);
   };
 
-  const handleSelect = (option) => {
+  // const handleSelect = (option) => {
+  //   if (option.disabled) return;
+  //   updateSelectedValue(option);
+  //   if (isSearchOptionsAllow) setSearch(option.label);
+  //   closeOptions();
+  // };
+
+  // const handleMultipleSelect = (e, option) => {
+  //   if (option.disabled) return;
+
+  //   if (e.target.checked) handleSelectedOptionsList(option);
+  //   else handleSelectedOptionsList(option, false);
+
+  //   const index = filteredOptions.findIndex((opt) => opt.id == option.id);
+  //   setFocusedIndex(index);
+  //   setSearch("");
+
+  //   requestAnimationFrame(() => {
+  //     triggerRef.current?.focus();
+  //   });
+  // };
+
+  const toggleOption = (option) => {
     
-    if (option.disabled) return;
-    updateSelectedValue(option);
-    if (isSearchOptionsAllow) setSearch(option.label);
-    closeOptions();
-  };
+    if (!isMultiSelectAllow) {
+      updateSelectedValue(option);
+      setSearch(option.label);
+      closeOptions();
+      return;
+    }
 
-  const handleMultipleSelect = (e, option) => {
-    if (option.disabled) return;
+    const exists = normalizedValue.some((o) => o.id === option.id);
 
-    if (e.target.checked) handleSelectedOptionsList(option);
-    else handleSelectedOptionsList(option, false);
+    const newList = exists
+      ? normalizedValue.filter((o) => o.id !== option.id)
+      : [...normalizedValue, option];
 
-    const index = filteredOptions.findIndex((opt) => opt.id == option.id);
-    setFocusedIndex(index);
+    updateSelectedValue(newList);
     setSearch("");
-
     requestAnimationFrame(() => {
       triggerRef.current?.focus();
     });
   };
 
   const handleKeyboardNavigation = (e) => {
-    if (!filteredOptions.length) return;
+    if (!baseOptions.length) return;
 
     if (e.key === "ArrowDown") {
-      setFocusedIndex((prev) => (prev + 1) % filteredOptions.length);
+      setFocusedIndex((prev) => (prev + 1) % baseOptions.length);
     } else if (e.key === "ArrowUp") {
       setFocusedIndex((prev) =>
-        prev <= 0 ? filteredOptions.length - 1 : prev - 1,
+        prev <= 0 ? baseOptions.length - 1 : prev - 1,
       );
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const option = filteredOptions[focusedIndex];
+      const option = baseOptions[focusedIndex];
 
       if (!option || option.disabled) return;
-      if (!selectedOptionsList) {
-        handleSelect(option);
-      } else {
-        handleSelectedOptionsList(option);
-      }
-
-      requestAnimationFrame(() => {
-        triggerRef.current?.focus();
-      });
+      toggleOption(option);
+          requestAnimationFrame(() => {
+            triggerRef.current?.focus();
+          });
     } else if (e.key === "Escape") {
       closeOptions();
     }
@@ -171,18 +230,17 @@ function UniversalSelect({
   };
 
   const handleSearch = (e) => {
-    setIsOpen(true);
     setSearch(e.target.value);
     setFocusedIndex(-1);
   };
 
-  const handleClear = (e) => {
-    e.stopPropagation();
-    updateSelectedValue(null);
-    setSearch("");
-  };
+  // const handleClear = (e) => {
+  //   e.stopPropagation();
+  //   updateSelectedValue(isMultiSelectAllow ? [] : null);
+  //   setSearch("");
+  // };
 
-  const getOptionStyle = (isDisabled, isFocused, isSelected, selectStyle) => {
+  const getOptionStyle = (isDisabled, isFocused, isSelected) => {
     return {
       ...(isDisabled && selectStyle?.disabledOption),
       ...(isFocused && selectStyle?.highlightOption),
@@ -190,7 +248,7 @@ function UniversalSelect({
     };
   };
 
-  const getOptionClassName = ({ isDisabled, isFocused, isSelected }) => {
+  const getOptionClassName = (isDisabled, isFocused, isSelected) => {
     return [
       "custom-select-option",
       isDisabled && "disabled",
@@ -199,40 +257,25 @@ function UniversalSelect({
     ].join(" ");
   };
 
-  const handleOptionClick = (option) => (e) => {
+  const handleOptionClick = (e, option) => {
     e.stopPropagation();
-    if (!selectedOptionsList) {
-      handleSelect(option);
-    }
+    toggleOption(option);
   };
 
-  const handleClearAllClick = (e) => {
-    e.stopPropagation();
-    handleSelectedOptionsList();
-    setFocusedIndex(-1);
-  };
+  // const handleClearAllClick = (e) => {
+  //   e.stopPropagation();
+  //   handleSelectedOptionsList();
+  //   setFocusedIndex(-1);
+  // };
 
   const renderOptions = () => {
     return filteredOptions.map((option, index) => {
       const isDisabled = option.disabled;
       const isFocused = index === focusedIndex;
-      const isSelected = selectedValue?.id === option.id;
-
-      const inlineStyle = getOptionStyle(
-        isDisabled,
-        isFocused,
-        isSelected,
-        selectStyle,
-      );
-
-      const className = getOptionClassName({
-        isDisabled,
-        isFocused,
-        isSelected,
-      });
+      const isSelected = isOptionSelected(option);
 
       const renderOptionContent = () => {
-        if (!selectedOptionsList) {
+        if (!isMultiSelectAllow) {
           return (
             <span className="option-label">
               {renderOption ? renderOption(option) : option.label}
@@ -240,22 +283,18 @@ function UniversalSelect({
           );
         }
         return (
-          <label
-            htmlFor={option.id}
+          <div
+            //htmlFor={option.id}
             className={`option-label ${isDisabled && "disabled"}`}
           >
             <input
               type="checkbox"
-              id={option.id}
-              name="options"
-              checked={selectedOptionsList.some(
-                (value) => value.id == option.id,
-              )}
+              checked={isSelected}
               disabled={option.disabled}
-              onChange={(e) => handleMultipleSelect(e, option)}
+              readOnly
             />
             {renderOption ? renderOption(option) : option.label}
-          </label>
+          </div>
         );
       };
 
@@ -263,9 +302,12 @@ function UniversalSelect({
         <li
           key={option.id}
           ref={isFocused ? highlightedRef : null}
-          style={inlineStyle}
-          className={className}
-          onClick={handleOptionClick(option)}
+          style={getOptionStyle(isDisabled, isFocused, isSelected)}
+          className={getOptionClassName(isDisabled, isFocused, isSelected)}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleOption(option);
+          }}
         >
           {renderOptionContent()}
         </li>
@@ -273,54 +315,66 @@ function UniversalSelect({
     });
   };
 
+  const handleClearAllValue = (e) => {
+    e.stopPropagation();
+    updateSelectedValue(isMultiSelectAllow ? [] : null);
+    setSearch("");
+    setFocusedIndex(-1);
+  };
+
   const renderActionIcon = () => {
-    if(loading) {
-      return <span>Loading...</span>
-    }
-    const arrow = isOpen ? "↑" : "↓";
+    const hasSelection = isMultiSelectAllow
+      ? normalizedValue.length > 0
+      : normalizedValue &&
+        typeof normalizedValue === "object" &&
+        "id" in normalizedValue;
 
-    if (!selectedOptionsList) {
-      if (selectedValue && isClearOptionAllow) {
-        return (
-          <span
-            onClick={handleClear}
-          >
-            ⛌
-          </span>
-        );
-      }
-      return <span>{arrow}</span>;
+    if (loading) {
+      return <span>Loading...</span>;
     }
 
-    if (selectedOptionsList.length === 0) {
-      return <span>{arrow}</span>;
+    if (isClearOptionAllow && hasSelection) {
+      return <span onClick={handleClearAllValue}>Clear</span>;
     }
 
-    if (isClearOptionAllow) {
-      return <span onClick={handleClearAllClick}>Clear</span>;
-    }
+    return <span>{isOpen ? "↑" : "↓"}</span>;
 
-    return <span>{arrow}</span>;
+    // if (!selectedOptionsList) {
+    //   if (selectedValue && isClearOptionAllow) {
+    //     return <span onClick={handleClear}>⛌</span>;
+    //   }
+    //   return <span>{arrow}</span>;
+    // }
+
+    // if (selectedOptionsList.length === 0) {
+    //   return <span>{arrow}</span>;
+    // }
+
+    // if (isClearOptionAllow) {
+    //   return <span onClick={handleClearAllClick}>Clear</span>;
+    // }
+
+    // return <span>{arrow}</span>;
   };
 
   const renderSelectContent = () => {
-
     const renderSelectedOptionList = () => {
-      return selectedOptionsList.map((option) => (
+      return normalizedValue.map((option) => (
         <div className="multiple-options" key={option.id}>
           {renderSelectedOption ? renderSelectedOption(option) : option.label}
           <span
             onClick={(e) => {
               e.stopPropagation();
-              handleSelectedOptionsList(option, false);
+              // handleSelectedOptionsList(option, false);
+              toggleOption(option);
             }}
           >
             ⤬
           </span>
         </div>
       ));
-    }
-  
+    };
+
     const renderSearchInput = () => {
       return (
         <input
@@ -333,10 +387,10 @@ function UniversalSelect({
           value={search}
         />
       );
-    }
+    };
 
     if (isSearchOptionsAllow) {
-      if (!selectedOptionsList || selectedOptionsList.length == 0) {
+      if (!isMultiSelectAllow) {
         return renderSearchInput();
       }
       return (
@@ -347,19 +401,27 @@ function UniversalSelect({
       );
     }
 
-    if (!selectedOptionsList || selectedOptionsList.length == 0) {
+    if (!isMultiSelectAllow) {
       return (
         <p>
-          {selectedValue
+          {normalizedValue
             ? renderOption
-              ? renderOption(selectedValue)
-              : selectedValue.label
+              ? renderOption(normalizedValue)
+              : normalizedValue.label
             : "Please Select Option"}
         </p>
       );
     }
 
-    return renderSelectedOptionList();
+    if(normalizedValue.length<=0){
+      return <span style={{marginLeft:"8px"}}>Please Select Options</span>
+    }
+
+    return (
+      <div className="multiple-options-container">
+        {renderSelectedOptionList()}
+      </div>
+    );
   };
 
   return (
@@ -373,6 +435,7 @@ function UniversalSelect({
         type="button"
         ref={triggerRef}
         className="custom-select-trigger"
+        tabIndex={0} //But browsers only fire keydown events on focused elements, to make it focus we use this.
         onClick={handleToggleOptions}
         onKeyDown={handleKeyboardNavigation}
       >

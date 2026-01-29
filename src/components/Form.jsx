@@ -52,22 +52,24 @@ const selectStyle = {
 
 };
 
+const STORAGE_KEY = "UNIVERSAL_USERS_VALUE";
+
 const Form = () => {
+
+  const isMultiSelectAllow = true;
+
   const [value, setValue] = useState(() => {
-    const stored = localStorage.getItem("SELECTED_USER");
-    return stored ? JSON.parse(stored) : null;
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+    return isMultiSelectAllow ? [] : null;
   });
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+  }, [value]);
 
   const [skip, setSkip] = useState(0);
   const [currentQuery, setCurrentQuery] = useState("");
   const [hasMoreData, setHasMoreData] = useState(true);
-
-  const [selectedOptionsList, setSelectedOptionsList] = useState(() => {
-    const stored = localStorage.getItem("SELECTED_USERS");
-    return stored ? JSON.parse(stored) : [];
-  });
-
-  const [defaultOptionId, setDefaultOptionId] = useState(1);
 
   const getStateOptions = () => {
     const result = [];
@@ -86,43 +88,27 @@ const Form = () => {
     return result;
   };
 
-  //default selected option
-  useEffect(() => {
-    const fetchDefault = async () => {
-      const res = await fetch(`https://dummyjson.com/users/${defaultOptionId}`);
-      const data = await res.json();
-      const defaultOption = {
-        id: data.id,
-        label: data.firstName,
-        disabled: false,
-      };
-      setValue(defaultOption);
-      localStorage.setItem("SELECTED_USER", JSON.stringify(defaultOption));
-    };
+  // useEffect(() => {
+  //   const defaultIds = isMultiSelectAllow ? [50, 12] : [1];
 
-    fetchDefault();
-  }, [defaultOptionId]);
+  //   const fetchDefaults = async () => {
+  //     const results = await Promise.all(
+  //       defaultIds.map(async (id) => {
+  //         const res = await fetch(`https://dummyjson.com/users/${id}`);
+  //         const data = await res.json();
+  //         return {
+  //           id: data.id,
+  //           label: data.firstName,
+  //           disabled: false,
+  //         };
+  //       }),
+  //     );
 
-  //default multiple selected options
-  useEffect(() => {
-    const defaultOptionIdList = [50,12];
-    let optionList = [];
-    const fetchDefaults = async () => {
-    defaultOptionIdList.map(async (id) => {
-      const res = await fetch(`https://dummyjson.com/users/${id}`);
-      const data = await res.json();
-      const defaultOption = {
-        id: data.id,
-        label: data.firstName,
-        disabled: false,
-      };
-      optionList.push(defaultOption);
-      setSelectedOptionsList(optionList);
-    });
-  }
-  fetchDefaults();
-
-  }, []);
+  //     setValue(isMultiSelectAllow ? results : results[0]);
+  //   };
+  
+  //   fetchDefaults();
+  // }, [isMultiSelectAllow]);
 
   const loadOptions = async (query) => {
     const encodedQuery = encodeURIComponent(query);
@@ -169,49 +155,44 @@ const Form = () => {
     return `${option.label} ${emojiList[option.id % Object.keys(emojiList).length]}`;
   };
 
-  //handle selected option
-  const handleOnChange = (option) => {
-    setValue(option);
-    if (option) {
-      localStorage.setItem("SELECTED_USER", JSON.stringify(option));
-    } else {
-      localStorage.removeItem("SELECTED_USER");
-    }
-  };
+  // //handle selected option
+  // const handleOnChange = (option) => {
+  //   setValue(option);
+  //   if (option) {
+  //     localStorage.setItem("SELECTED_USER", JSON.stringify(option));
+  //   } else {
+  //     localStorage.removeItem("SELECTED_USER");
+  //   }
+  // };
 
   //handle multiple selected options
-  const handleSelectedOptionsList = (option, pushOption = true) => {
+  // const handleSelectedOptionsList = (option, pushOption = true) => {
     
-    if (!option) {
-      setSelectedOptionsList([]);
-      return;
-    }
-    if (pushOption) {
-      setSelectedOptionsList((prev) => [...prev, option]);
-    } else {
-      const filteredOptons = selectedOptionsList.filter(
-        (value) => value.id !== option.id,
-      );
-      setSelectedOptionsList(filteredOptons);
-    }
-  };
-
-  //persist multiple selected options
-  useEffect(() => {
-    localStorage.setItem("SELECTED_USERS", JSON.stringify(selectedOptionsList));
-  }, [selectedOptionsList]);
+  //   if (!option) {
+  //     setSelectedOptionsList([]);
+  //     return;
+  //   }
+  //   if (pushOption) {
+  //     setSelectedOptionsList((prev) => [...prev, option]);
+  //   } else {
+  //     const filteredOptons = selectedOptionsList.filter(
+  //       (value) => value.id !== option.id,
+  //     );
+  //     setSelectedOptionsList(filteredOptons);
+  //   }
+  // };
 
   return (
     <form>
       <UniversalSelect
+        options={getStateOptions()}
         label="Users"
         value={value}
-        onChange={handleOnChange}
+        onChange={setValue}
         loadOptions={loadOptions}
         renderOption={renderOption}
         renderSelectedOption={renderSelectedOption}
-        selectedOptionsList={selectedOptionsList}
-        handleSelectedOptionsList={handleSelectedOptionsList}
+        isMultiSelectAllow={isMultiSelectAllow}
       />
     </form>
   );
