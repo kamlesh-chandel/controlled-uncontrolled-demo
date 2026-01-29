@@ -141,7 +141,7 @@ input {
 }
 
 .custom-select-option:hover {
-  background-color: var(--light-blue);
+  background-color: var(--lighter-blue);
 }
 
 .selected {

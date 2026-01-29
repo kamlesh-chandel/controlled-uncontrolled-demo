@@ -1,8 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import "./form.css";
 
-const SELECTED_OPTION = "selected_option";
-
 function UniversalSelect({
   options = [],
   loadOptions,
@@ -20,7 +18,7 @@ function UniversalSelect({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [internalValue, setInternalValue] = useState(() => {
-    const stored = localStorage.getItem(SELECTED_OPTION);
+    const stored = localStorage.getItem("SELECTED_USER");
     return stored ? JSON.parse(stored) : null;
   });
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -39,7 +37,7 @@ function UniversalSelect({
       return;
     }
 
-    const stored = localStorage.getItem(SELECTED_OPTION);
+    const stored = localStorage.getItem("SELECTED_USER");
     if (!stored) return;
 
     const parsed = JSON.parse(stored);
@@ -62,7 +60,7 @@ function UniversalSelect({
   }, [closeOnOutsideClick]);
 
   useLayoutEffect(() => {
-    highlightedRef?.current?.scrollIntoView({ top: 0 });
+    highlightedRef?.current?.scrollIntoView({ top:0 });
   }, [focusedIndex]);
 
   const filteredOptions = useMemo(() => {
@@ -75,13 +73,13 @@ function UniversalSelect({
   const updateSelectedValue = (option) => {
     if (value === undefined) {
       setInternalValue(option);
-    }
+    }else{
     onChange(option);
-
+    }
     if (option) {
-      localStorage.setItem(SELECTED_OPTION, JSON.stringify(option));
+      localStorage.setItem("SELECTED_USER", JSON.stringify(option));
     } else {
-      localStorage.removeItem(SELECTED_OPTION);
+      localStorage.removeItem("SELECTED_USER");
     }
   };
 
@@ -97,7 +95,7 @@ function UniversalSelect({
   };
 
   const closeOptions = () => {
-    const storedValue = localStorage.getItem(SELECTED_OPTION);
+    const storedValue = localStorage.getItem("SELECTED_USER");
     if (storedValue) setSearch(JSON.parse(storedValue).label);
     else setSearch("");
     setFocusedIndex(-1);
@@ -105,6 +103,8 @@ function UniversalSelect({
   };
 
   const handleSelect = (option) => {
+    console.log("hii");
+    
     if (option.disabled) return;
     updateSelectedValue(option);
     if (isSearchOptionsAllow) setSearch(option.label);
