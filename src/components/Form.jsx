@@ -49,13 +49,11 @@ const selectStyle = {
   highlightOption: { backgroundColor: "var(--orange)" },
   disabledOption: { backgroundColor: "var(--light-red)" },
   selectedOption: { backgroundColor: "var(--orange)" },
-
 };
 
 const STORAGE_KEY = "UNIVERSAL_USERS_VALUE";
 
 const Form = () => {
-
   const isMultiSelectAllow = true;
 
   const [value, setValue] = useState(() => {
@@ -63,9 +61,6 @@ const Form = () => {
     if (stored) return JSON.parse(stored);
     return isMultiSelectAllow ? [] : null;
   });
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
-  }, [value]);
 
   const [skip, setSkip] = useState(0);
   const [currentQuery, setCurrentQuery] = useState("");
@@ -88,31 +83,36 @@ const Form = () => {
     return result;
   };
 
-  // useEffect(() => {
-  //   const defaultIds = isMultiSelectAllow ? [50, 12] : [1];
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+  }, [value]);
 
-  //   const fetchDefaults = async () => {
-  //     const results = await Promise.all(
-  //       defaultIds.map(async (id) => {
-  //         const res = await fetch(`https://dummyjson.com/users/${id}`);
-  //         const data = await res.json();
-  //         return {
-  //           id: data.id,
-  //           label: data.firstName,
-  //           disabled: false,
-  //         };
-  //       }),
-  //     );
+  //fetch default selected users
+  useEffect(() => {
+    const defaultIds = isMultiSelectAllow ? [50, 12] : [1];
 
-  //     setValue(isMultiSelectAllow ? results : results[0]);
-  //   };
-  
-  //   fetchDefaults();
-  // }, [isMultiSelectAllow]);
+    const fetchDefaults = async () => {
+      const results = await Promise.all(
+        defaultIds.map(async (id) => {
+          const res = await fetch(`https://dummyjson.com/users/${id}`);
+          const data = await res.json();
+          return {
+            id: data.id,
+            label: data.firstName,
+            disabled: false,
+          };
+        }),
+      );
+
+      setValue(isMultiSelectAllow ? results : results[0]);
+    };
+
+    fetchDefaults();
+  }, [isMultiSelectAllow]);
 
   const loadOptions = async (query) => {
     const encodedQuery = encodeURIComponent(query);
-    
+
     const isNewQuery = encodedQuery !== currentQuery;
     let localSkip = skip;
 
@@ -154,33 +154,6 @@ const Form = () => {
   const renderSelectedOption = (option) => {
     return `${option.label} ${emojiList[option.id % Object.keys(emojiList).length]}`;
   };
-
-  // //handle selected option
-  // const handleOnChange = (option) => {
-  //   setValue(option);
-  //   if (option) {
-  //     localStorage.setItem("SELECTED_USER", JSON.stringify(option));
-  //   } else {
-  //     localStorage.removeItem("SELECTED_USER");
-  //   }
-  // };
-
-  //handle multiple selected options
-  // const handleSelectedOptionsList = (option, pushOption = true) => {
-    
-  //   if (!option) {
-  //     setSelectedOptionsList([]);
-  //     return;
-  //   }
-  //   if (pushOption) {
-  //     setSelectedOptionsList((prev) => [...prev, option]);
-  //   } else {
-  //     const filteredOptons = selectedOptionsList.filter(
-  //       (value) => value.id !== option.id,
-  //     );
-  //     setSelectedOptionsList(filteredOptons);
-  //   }
-  // };
 
   return (
     <form>

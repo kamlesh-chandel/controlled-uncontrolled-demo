@@ -49,19 +49,6 @@ function UniversalSelect({
     }
   }, [normalizedValue, isMultiSelectAllow]);
 
-  // useEffect(() => {
-  //   if (value?.label) {
-  //     setSearch(value.label);
-  //     return;
-  //   }
-
-  //   const stored = localStorage.getItem("SELECTED_USER");
-  //   if (!stored) return;
-
-  //   const parsed = JSON.parse(stored);
-  //   setSearch(parsed.label);
-  // }, [value]);
-
   const fetchOptions = async (reset = false) => {
     if (!loadOptions) return;
     setLoading(true);
@@ -101,7 +88,6 @@ function UniversalSelect({
     );
   }, [baseOptions, search, loadOptions]);
 
-  //updateValue
   const updateSelectedValue = (newValue) => {
     if (value === undefined) {
       setInternalValue(newValue);
@@ -138,37 +124,12 @@ function UniversalSelect({
         setSearch("");
       }
     }
-    setFocusedIndex(-1);
-    console.log("hello");
-    console.log(isOpen);
-    
+    setFocusedIndex(-1); 
     setIsOpen(false);
   };
 
-  // const handleSelect = (option) => {
-  //   if (option.disabled) return;
-  //   updateSelectedValue(option);
-  //   if (isSearchOptionsAllow) setSearch(option.label);
-  //   closeOptions();
-  // };
-
-  // const handleMultipleSelect = (e, option) => {
-  //   if (option.disabled) return;
-
-  //   if (e.target.checked) handleSelectedOptionsList(option);
-  //   else handleSelectedOptionsList(option, false);
-
-  //   const index = filteredOptions.findIndex((opt) => opt.id == option.id);
-  //   setFocusedIndex(index);
-  //   setSearch("");
-
-  //   requestAnimationFrame(() => {
-  //     triggerRef.current?.focus();
-  //   });
-  // };
-
   const toggleOption = (option) => {
-    
+
     if (!isMultiSelectAllow) {
       updateSelectedValue(option);
       setSearch(option.label);
@@ -234,12 +195,6 @@ function UniversalSelect({
     setFocusedIndex(-1);
   };
 
-  // const handleClear = (e) => {
-  //   e.stopPropagation();
-  //   updateSelectedValue(isMultiSelectAllow ? [] : null);
-  //   setSearch("");
-  // };
-
   const getOptionStyle = (isDisabled, isFocused, isSelected) => {
     return {
       ...(isDisabled && selectStyle?.disabledOption),
@@ -257,17 +212,6 @@ function UniversalSelect({
     ].join(" ");
   };
 
-  const handleOptionClick = (e, option) => {
-    e.stopPropagation();
-    toggleOption(option);
-  };
-
-  // const handleClearAllClick = (e) => {
-  //   e.stopPropagation();
-  //   handleSelectedOptionsList();
-  //   setFocusedIndex(-1);
-  // };
-
   const renderOptions = () => {
     return filteredOptions.map((option, index) => {
       const isDisabled = option.disabled;
@@ -284,7 +228,6 @@ function UniversalSelect({
         }
         return (
           <div
-            //htmlFor={option.id}
             className={`option-label ${isDisabled && "disabled"}`}
           >
             <input
@@ -338,23 +281,6 @@ function UniversalSelect({
     }
 
     return <span>{isOpen ? "↑" : "↓"}</span>;
-
-    // if (!selectedOptionsList) {
-    //   if (selectedValue && isClearOptionAllow) {
-    //     return <span onClick={handleClear}>⛌</span>;
-    //   }
-    //   return <span>{arrow}</span>;
-    // }
-
-    // if (selectedOptionsList.length === 0) {
-    //   return <span>{arrow}</span>;
-    // }
-
-    // if (isClearOptionAllow) {
-    //   return <span onClick={handleClearAllClick}>Clear</span>;
-    // }
-
-    // return <span>{arrow}</span>;
   };
 
   const renderSelectContent = () => {
@@ -365,7 +291,6 @@ function UniversalSelect({
           <span
             onClick={(e) => {
               e.stopPropagation();
-              // handleSelectedOptionsList(option, false);
               toggleOption(option);
             }}
           >
@@ -435,7 +360,7 @@ function UniversalSelect({
         type="button"
         ref={triggerRef}
         className="custom-select-trigger"
-        tabIndex={0} //But browsers only fire keydown events on focused elements, to make it focus we use this.
+        tabIndex={0} //browsers only fire keydown events on focused elements, to make it focus we use this.
         onClick={handleToggleOptions}
         onKeyDown={handleKeyboardNavigation}
       >
