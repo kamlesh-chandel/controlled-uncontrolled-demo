@@ -44,16 +44,15 @@ const emojiList = {
 
 //customize select component style
 const selectStyle = {
-  selectWrapper: { height: "100px" },
-  optionsList: { backgroundColor: "black", color: "white" },
-  highlightOption: { backgroundColor: "orange" },
-  disabledOption: { backgroundColor: "rgb(230, 163, 163)" },
-  selectedOption: { backgroundColor: "orange" },
+  selectWrapper: { color: "var(--black)" },
+  optionsList: { backgroundColor: "var(--black)", color: "var(--white)" },
+  highlightOption: { backgroundColor: "var(--orange)" },
+  disabledOption: { backgroundColor: "var(--light-red)" },
+  selectedOption: { backgroundColor: "var(--orange)" },
 
 };
 
 const Form = () => {
-  //single selected option
   const [value, setValue] = useState(() => {
     const stored = localStorage.getItem("SELECTED_USER");
     return stored ? JSON.parse(stored) : null;
@@ -63,11 +62,12 @@ const Form = () => {
   const [currentQuery, setCurrentQuery] = useState("");
   const [hasMoreData, setHasMoreData] = useState(true);
 
-  //multiple selected option
   const [selectedOptionsList, setSelectedOptionsList] = useState(() => {
     const stored = localStorage.getItem("SELECTED_USERS");
     return stored ? JSON.parse(stored) : [];
   });
+
+  const [defaultOptionId, setDefaultOptionId] = useState(1);
 
   const getStateOptions = () => {
     const result = [];
@@ -87,43 +87,42 @@ const Form = () => {
   };
 
   //default selected option
-  // useEffect(() => {
-  //   let defaultOptionId = 100;
-  //   const fetchDefault = async () => {
-  //     const res = await fetch(`https://dummyjson.com/users/${defaultOptionId}`);
-  //     const data = await res.json();
-  //     const defaultOption = {
-  //       id: data.id,
-  //       label: data.firstName,
-  //       disabled: false,
-  //     };
-  //     setValue(defaultOption);
-  //     localStorage.setItem("SELECTED_USER", JSON.stringify(defaultOption));
-  //   };
+  useEffect(() => {
+    const fetchDefault = async () => {
+      const res = await fetch(`https://dummyjson.com/users/${defaultOptionId}`);
+      const data = await res.json();
+      const defaultOption = {
+        id: data.id,
+        label: data.firstName,
+        disabled: false,
+      };
+      setValue(defaultOption);
+      localStorage.setItem("SELECTED_USER", JSON.stringify(defaultOption));
+    };
 
-  //   fetchDefault();
-  // }, []);
+    fetchDefault();
+  }, [defaultOptionId]);
 
   //default multiple selected options
-  // useEffect(() => {
+  useEffect(() => {
+    const defaultOptionIdList = [50,12];
+    let optionList = [];
+    const fetchDefaults = async () => {
+    defaultOptionIdList.map(async (id) => {
+      const res = await fetch(`https://dummyjson.com/users/${id}`);
+      const data = await res.json();
+      const defaultOption = {
+        id: data.id,
+        label: data.firstName,
+        disabled: false,
+      };
+      optionList.push(defaultOption);
+      setSelectedOptionsList(optionList);
+    });
+  }
+  fetchDefaults();
 
-  //   const defaultOptionIdList = [50,12];
-  //   let optionList = [];
-  //   const fetchDefaults = async () => {
-  //   defaultOptionIdList.map(async (id) => {
-  //     const res = await fetch(`https://dummyjson.com/users/${id}`);
-  //     const data = await res.json();
-  //     const defaultOption = {
-  //       id: data.id,
-  //       label: data.firstName,
-  //       disabled: false,
-  //     };
-  //     optionList.push(defaultOption);
-  //     setSelectedOptionsList(optionList);
-  //   });
-  // }
-  // if (!localStorage.getItem("SELECTED_USERS")) fetchDefaults();
-  // }, []);
+  }, []);
 
   const loadOptions = async (query) => {
     const encodedQuery = encodeURIComponent(query);
@@ -209,11 +208,6 @@ const Form = () => {
         value={value}
         onChange={handleOnChange}
         loadOptions={loadOptions}
-        //options={getStateOptions()}
-        //closeOnOutsideClick
-        //isClearOptionAllow
-        //isSearchOptionsAllow
-        //selectStyle={selectStyle}
         renderOption={renderOption}
         renderSelectedOption={renderSelectedOption}
         selectedOptionsList={selectedOptionsList}
