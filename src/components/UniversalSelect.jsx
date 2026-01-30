@@ -12,7 +12,7 @@ function UniversalSelect({
   isMultiSelectAllow = false,
   closeOnOutsideClick = true,
   isClearOptionAllow = true,
-  isSearchOptionsAllow = true,
+  isSearchOptionsAllow = false,
   selectStyle = {},
   renderOption,
   renderSelectedOption,
@@ -339,7 +339,7 @@ function UniversalSelect({
     }
 
     if(normalizedValue.length<=0){
-      return <span style={{marginLeft:"8px"}}>Please Select Options</span>
+      return <p>Please Select Options</p>
     }
 
     return (
