@@ -5,17 +5,17 @@ const STORAGE_KEY = "UNIVERSAL_SELECT_VALUE";
 
 function UniversalSelect({
   options = [],
-  loadOptions,
+  loadAsyncOptions,
   value,
   onChange,
   label,
   isMultiSelectAllow = false,
   closeOnOutsideClick = true,
   isClearOptionAllow = true,
-  isSearchOptionsAllow = false,
+  isSearchAllow = true,
   selectStyle = {},
   renderOption,
-  renderSelectedOption,
+  renderSelectedOptionChip,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [internalValue, setInternalValue] = useState(() => {
@@ -37,7 +37,7 @@ function UniversalSelect({
       : []
     : selectedValue;
 
-  const baseOptions = loadOptions ? asyncOptions : options;
+  const baseOptions = loadAsyncOptions ? asyncOptions : options;
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedValue));
@@ -50,14 +50,16 @@ function UniversalSelect({
   }, [normalizedValue, isMultiSelectAllow]);
 
   const fetchOptions = async (reset = false) => {
-    if (!loadOptions) return;
+    if (!loadAsyncOptions) return;
     setLoading(true);
 
-    const result = await loadOptions(search);
+    const resultOptions = await loadAsyncOptions(search);
 
     setLoading(false);
-    if (!result) return;
-    setAsyncOptions((prev) => (reset ? result : [...prev, ...result]));
+    if (!resultOptions) return;
+    setAsyncOptions((prev) =>
+      reset ? resultOptions : [...prev, ...resultOptions],
+    );
   };
 
   useEffect(() => {
@@ -81,12 +83,11 @@ function UniversalSelect({
   }, [focusedIndex]);
 
   const filteredOptions = useMemo(() => {
-    if (loadOptions) return baseOptions;
-    if(!isSearchOptionsAllow) return baseOptions;
+    if (loadAsyncOptions || !isSearchAllow) return baseOptions;
     return baseOptions.filter((option) =>
       option.label.toLowerCase().includes(search.toLowerCase()),
     );
-  }, [baseOptions, search, loadOptions]);
+  }, [baseOptions, search, loadAsyncOptions]);
 
   const updateSelectedValue = (newValue) => {
     if (value === undefined) {
@@ -106,21 +107,12 @@ function UniversalSelect({
     if (isMultiSelectAllow) {
       setSearch("");
     } else {
-      const storedValue = localStorage.getItem(STORAGE_KEY);
-      if (storedValue) {
-        const parsed = JSON.parse(storedValue);
-        if (parsed) {
-          if(parsed.label){
+      try {
+        const storedValue = localStorage.getItem(STORAGE_KEY);
+        const parsed = storedValue ? JSON.parse(storedValue) : null;
 
-            setSearch(parsed?.label);
-          }else{
-            setSearch("");
-          }
-          
-        } else {
-          setSearch("");
-        }
-      }else{
+        setSearch(parsed?.label || "");
+      } catch {
         setSearch("");
       }
     }
@@ -266,11 +258,14 @@ function UniversalSelect({
   };
 
   const renderActionIcon = () => {
+    const hasSingleSelection =
+      normalizedValue &&
+      typeof normalizedValue === "object" &&
+      "id" in normalizedValue;
+ 
     const hasSelection = isMultiSelectAllow
       ? normalizedValue.length > 0
-      : normalizedValue &&
-        typeof normalizedValue === "object" &&
-        "id" in normalizedValue;
+      : hasSingleSelection
 
     if (loading) {
       return <span>Loading...</span>;
@@ -287,7 +282,7 @@ function UniversalSelect({
     const renderSelectedOptionList = () => {
       return normalizedValue.map((option) => (
         <div className="multiple-options" key={option.id}>
-          {renderSelectedOption ? renderSelectedOption(option) : option.label}
+          {renderSelectedOptionChip ? renderSelectedOptionChip(option) : option.label}
           <span
             onClick={(e) => {
               e.stopPropagation();
@@ -314,7 +309,7 @@ function UniversalSelect({
       );
     };
 
-    if (isSearchOptionsAllow) {
+    if (isSearchAllow) {
       if (!isMultiSelectAllow) {
         return renderSearchInput();
       }

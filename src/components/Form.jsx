@@ -110,7 +110,7 @@ const Form = () => {
     fetchDefaults();
   }, [isMultiSelectAllow]);
 
-  const loadOptions = async (query) => {
+  const loadAsyncOptions = async (query) => {
     const encodedQuery = encodeURIComponent(query);
 
     const isNewQuery = encodedQuery !== currentQuery;
@@ -151,7 +151,7 @@ const Form = () => {
   };
 
   //render selected option
-  const renderSelectedOption = (option) => {
+  const renderSelectedOptionChip = (option) => {
     return `${option.label} ${emojiList[option.id % Object.keys(emojiList).length]}`;
   };
 
@@ -162,9 +162,9 @@ const Form = () => {
         label="Users"
         value={value}
         onChange={setValue}
-        loadOptions={loadOptions}
+        loadAsyncOptions={loadAsyncOptions}
         renderOption={renderOption}
-        renderSelectedOption={renderSelectedOption}
+        renderSelectedOptionChip={renderSelectedOptionChip}
         isMultiSelectAllow={isMultiSelectAllow}
       />
     </form>
